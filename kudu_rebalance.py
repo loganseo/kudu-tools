@@ -17,6 +17,9 @@ for arg in sys.argv:
     print('arg value = ', arg)
 
 
+# TODO: 전체 Tablet Server 의 Tablet 개수를 추출하고, 상위 TS -> 하위 TS 로 move 하는 로직
+
+
 # 1) Source TS Web UI 에서 Tablet 리스트 추출
 def extract_tablets(src_ts, trgt_tbl, partition):
     # 추출 예제: curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "cbs.corebanking_log" -A2
@@ -66,6 +69,28 @@ def sort_tablets(trgt_tbl, tablet_list):
     return sorted_tlist
 
 
+def ksck_tablets(tlist):
+    moved_tlist_str = ','.join(map(str, tlist))
+    print("moved_tlist_str: %s" % moved_tlist_str)
+    cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
+                       "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + moved_tlist_str
+    temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
+    output_ksck = temp_output.read().strip()
+    temp_output.close()
+    output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
+    return output_ksck
+
+
+def ksck_single_tablet(a_tablet):
+    cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
+                "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + a_tablet
+    temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
+    output_ksck = temp_output.read().strip()
+    temp_output.close()
+    output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
+    return output_ksck
+
+
 def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     # cat /Users/dongjin/Downloads/kudu_rebalancing_Test/view-source_sp-dat-hdp03-slv22.kbin.io_8050_tablets.html |
     # grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
@@ -93,7 +118,7 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     for i in range(num_ts):
         cmd_move = "nohup kudu tablet change_config move_replica " \
                    "sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-                   + tablet_list[i] + " " + src_ts_uuid + " " + trgt_ts_uuid + " & > /dev/null"
+                   + tablet_list[i] + " " + src_ts_uuid + " " + trgt_ts_uuid + " & > /dev/null 2>&1"
         # print(cmd_move)
         subprocess.call(cmd_move, shell=True)
         time.sleep(5)
@@ -101,33 +126,46 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
         # 삭제된 tablet 리스트에 저장
         moved_tlist.append(tablet_list[i])
     time.sleep(30)
-    cmd_check = 'kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 | grep -E "Bootstrap|Copy" | wc -l'
-    moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
+    # cmd_check = 'kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 | grep -E "Bootstrap|Copy" | wc -l'
+    # moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
+    # while moving_cnt > 0:
+    #     moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
+    #     print("moving tablet count: %s" % moving_cnt)
+    #     time.sleep(60)
+    moving_cnt = len(moved_tlist)
     while moving_cnt > 0:
-        moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
-        print("moving tablet count: %s" % moving_cnt)
-        time.sleep(30)
+        output_ksck = ksck_tablets(moved_tlist)
+        for i in range(len(moved_tlist)):
+            check_count = 0
+            for j in range(0, 3):
+                state = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['state']
+                if state == "INITIALIZED":
+                    tablet_id = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['tablet_id']
+                    last_status = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['last_status']
+                    print("state: %s" % state)
+                    print("tablet_id: %s" % tablet_id)
+                    print("last_status: %s" % last_status)
+                    check_count = check_count + 1
+                    print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
+            if check_count == 0:
+                 moving_cnt = moving_cnt - 1
     # moved 된 tablet 삭제
     if moving_cnt == 0:
         for t in moved_tlist:
             print("completed to move this tablet: %s" % t)
-            cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-                       "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + t
-            temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
-            output_ksck = temp_output.read().strip()
-            temp_output.close()
-            output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
-            for i in range(0, 3):
-                is_leader = output_ksck['tablet_summaries'][0]['replicas'][i]['is_leader']
-                print("is_leader: %s" % is_leader)
-                if is_leader == "true":
-                    leader_ts = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_uuid']
+            output_ksck = ksck_single_tablet(t)
+            leader_ts_uuid = output_ksck['tablet_summaries'][0]['master_cstate']['leader_uuid']
+            # for i in range(0, 3):
+            #     is_leader = output_ksck['tablet_summaries'][0]['replicas'][i]['is_leader']
+            #     # print("is_leader: %s" % is_leader)
+            #     if is_leader:
+            #         leader_ts_uuid = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_uuid']
             time.sleep(5)
             cmd_remove = 'kudu tablet change_config remove_replica sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 ' \
                          + t + ' ' + src_ts_uuid
-            print("leader tablet server uuid: %s" % leader_ts)
-            print("source tablet server uuid: %s" % src_ts)
-            if src_ts == leader_ts:
+            # print("leader tablet server uuid: %s" % leader_ts_uuid)
+            # print("source tablet server uuid: %s" % src_ts_uuid)
+            if src_ts_uuid == leader_ts_uuid:
                 print("Doing leader_step_down")
                 cmd_leader_step_down = 'kudu tablet leader_step_down sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 ' + t
                 subprocess.call(cmd_leader_step_down, shell=True)
@@ -150,6 +188,8 @@ sorted_tablets = sort_tablets(sys.argv[3], src_extracted_tablets)
 # 3) 이동 대상 TS 개수 산정
 move_num_ts = (len(sorted_tablets) - len(trgt_extracted_tablets)) / 2
 
+# TODO: 이미 실행된 move_replica 에 tablet 이 지금 실행할 tablet list 에 포함되어 있는지 여부 체크 로직, 만약 존재할 경우 해당 tablet은 제외
+
 # 4) pre-execution 인 경우 실행 계획 출력하고 실제 실행은 하지 않음
 if sys.argv[5] is not None and sys.argv[5] == "true":
     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
@@ -159,5 +199,8 @@ else:
     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
     print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
     print("Number of target tablets: %s" % move_num_ts)
-    print("Execute move_replica...")
-    move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
+    if move_num_ts <= 0:
+        print("There is nothing to move...")
+    else:
+        print("Execute move_replica...")
+        move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
