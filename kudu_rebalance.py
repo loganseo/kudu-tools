@@ -11,7 +11,6 @@ if len(sys.argv) < 2:
     raise ValueError("Usage: kudu_rebalance.py <Source TS>, <Target TS>, <Table name>, <Range Partition("
                      "ex: 20190801)>, pre-execution")
 
-
 # TODO: add parameter validation check
 for arg in sys.argv:
     print('arg value = ', arg)
@@ -39,7 +38,7 @@ def extract_tablets(src_ts, trgt_tbl, partition):
     return extr_tlist
 
 
-# 2) 추출된 Tablet 리스트에서 Target TS 가 포함된 replica 제외
+# 2) 추출된 Tablet 리스트에서 Target TS 가 포함 되있거나, 이미 실행된 move_replica 에 포함된 경우 해당 replica 는 제외
 def sort_tablets(trgt_tbl, tablet_list):
     sorted_tlist = []
     for t in tablet_list:
@@ -50,14 +49,15 @@ def sort_tablets(trgt_tbl, tablet_list):
         temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
         output_ksck = temp_output.read().strip()
         temp_output.close()
-        output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
+        output_ksck = json.loads(output_ksck.decode("utf-8", "ignore"))
         for i in range(0, 3):
             ts_address = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_address']
             ts_address = re.sub(':7050', '', string=ts_address)
+            state = output_ksck['tablet_summaries'][0]['replicas'][i]['state']
             # print(ts_address)
             # Target TS 가 포함된 replica 체크하여 포함되지 않는 tablet 들로 list 구성
             tgrt_yn = False
-            if ts_address == sys.argv[2]:
+            if ts_address == sys.argv[2] or state == "INITIALIZED":
                 # print("move_replica 대상아님")
                 tgrt_yn = False
                 break
@@ -73,21 +73,21 @@ def ksck_tablets(tlist):
     moved_tlist_str = ','.join(map(str, tlist))
     print("moved_tlist_str: %s" % moved_tlist_str)
     cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-                       "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + moved_tlist_str
+               "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + moved_tlist_str
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
-    output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
+    output_ksck = json.loads(output_ksck.decode("utf-8", "ignore"))
     return output_ksck
 
 
 def ksck_single_tablet(a_tablet):
     cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-                "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + a_tablet
+               "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + a_tablet
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
-    output_ksck = json.loads(output_ksck.decode("utf-8","ignore"))
+    output_ksck = json.loads(output_ksck.decode("utf-8", "ignore"))
     return output_ksck
 
 
@@ -96,18 +96,18 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     # grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
     # curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
     ts_uuid = subprocess.Popen('curl -s http://' + src_ts + ':8050/tablets '
-                                   '| grep -w "server uuid"'
-                                   , stdout=subprocess.PIPE
-                                   , shell=True).stdout
+                                                            '| grep -w "server uuid"'
+                               , stdout=subprocess.PIPE
+                               , shell=True).stdout
     src_ts_uuid = ts_uuid.read().strip()
     ts_uuid.close()
     src_ts_uuid = re.sub('server uuid ', '', string=src_ts_uuid)
     src_ts_uuid = re.sub('</pre>', '', string=src_ts_uuid)
     # print("src_ts_uuid %s" % src_ts_uuid)
     ts_uuid = subprocess.Popen('curl -s http://' + trgt_ts + ':8050/tablets '
-                                   '| grep -w "server uuid"'
-                                   , stdout=subprocess.PIPE
-                                   , shell=True).stdout
+                                                             '| grep -w "server uuid"'
+                               , stdout=subprocess.PIPE
+                               , shell=True).stdout
     trgt_ts_uuid = ts_uuid.read().strip()
     ts_uuid.close()
     trgt_ts_uuid = re.sub('server uuid ', '', string=trgt_ts_uuid)
@@ -148,7 +148,7 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
                     check_count = check_count + 1
                     print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
             if check_count == 0:
-                 moving_cnt = moving_cnt - 1
+                moving_cnt = moving_cnt - 1
     # moved 된 tablet 삭제
     if moving_cnt == 0:
         for t in moved_tlist:
@@ -187,8 +187,6 @@ sorted_tablets = sort_tablets(sys.argv[3], src_extracted_tablets)
 
 # 3) 이동 대상 TS 개수 산정
 move_num_ts = (len(sorted_tablets) - len(trgt_extracted_tablets)) / 2
-
-# TODO: 이미 실행된 move_replica 에 tablet 이 지금 실행할 tablet list 에 포함되어 있는지 여부 체크 로직, 만약 존재할 경우 해당 tablet은 제외
 
 # 4) pre-execution 인 경우 실행 계획 출력하고 실제 실행은 하지 않음
 if sys.argv[5] is not None and sys.argv[5] == "true":
