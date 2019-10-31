@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import time
+import unittest
 
 if len(sys.argv) < 2:
     raise ValueError("Usage: kudu_rebalance.py <Source TS>, <Target TS>, <Table name>, <Range Partition("
@@ -120,7 +121,7 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
         print(tablet_list[i])
         # moving tablet id 리스트에 저장
         moved_tlist.append(tablet_list[i])
-    time.sleep(30)
+    time.sleep(60)
     # cmd_check = 'kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 | grep -E "Bootstrap|Copy" | wc -l'
     # moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
     # while moving_cnt > 0:
@@ -143,10 +144,10 @@ def checking_move_replica(tablet_list):
     while moving_cnt > 0:
         output_ksck = ksck_tablets(tablet_list)
         print("tablet_summaries: %s" % len(output_ksck['tablet_summaries']))
+        check_count = 0
         for i in range(len(output_ksck['tablet_summaries'])):
-            check_count = 0
             for j in range(len(output_ksck['tablet_summaries'][i]['replicas'])):
-                state = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['state']
+                state = output_ksck['tablet_summaries'][i]['replicas'][j]['state']
                 if state == "INITIALIZED":
                     tablet_id = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['tablet_id']
                     last_status = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['last_status']
@@ -154,17 +155,22 @@ def checking_move_replica(tablet_list):
                     print("tablet_id: %s" % tablet_id)
                     print("last_status: %s" % last_status)
                     check_count = check_count + 1
-                    print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
-            if check_count == 0:
-                moving_cnt = moving_cnt - 1
+                elif state == "UNKNOWN":
+                    print("state: %s" % state)
+                    check_count = check_count + 1
+        print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
+        if moving_cnt > check_count:
+            moving_cnt = check_count
+        # if check_count == 0:
+        #     moving_cnt = moving_cnt - 1
         time.sleep(60)
     print("checking_move_replica::moving_cnt: %s" % moving_cnt)
     return moving_cnt
 
 
-def remove_replica(tablet_list, check_count):
+def remove_replica(tablet_list, moved_count):
     # moved 된 tablet 삭제
-    if check_count == 0:
+    if moved_count == 0:
         for t in tablet_list:
             print("completed to move this tablet: %s" % t)
             output_ksck = ksck_single_tablet(t)
@@ -216,5 +222,5 @@ else:
     else:
         print("Execute move_replica...")
         moving_tblt_list = move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
-        chk_cnt = checking_move_replica(moving_tblt_list)
-        remove_replica(moving_tblt_list, chk_cnt)
+        moved_cnt = checking_move_replica(moving_tblt_list)
+        remove_replica(moving_tblt_list, moved_cnt)
