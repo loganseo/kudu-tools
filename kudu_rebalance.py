@@ -1,8 +1,6 @@
 # coding=utf-8
-import os
 import sys
 import json
-import pprint
 import re
 import subprocess
 import time
@@ -24,7 +22,7 @@ def extract_tablets(src_ts, trgt_tbl, partition):
     # 추출 예제: curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "cbs.corebanking_log" -A2
     #  | grep "PARTITION &quot;20190801&quot;" -B1 | grep -o id=.*\" | sed 's/id=//g' | sed 's/"//g'
     cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + trgt_tbl + '" -A2 ' \
-               '| grep "PARTITION &quot;' + partition + '&quot;" -B1 | grep -o id=.*'
+                                                                                     '| grep "PARTITION &quot;' + partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -33,8 +31,6 @@ def extract_tablets(src_ts, trgt_tbl, partition):
     extr_tlist = re.sub('(id=)', '', string=extr_tlist)
     extr_tlist = re.sub('".*', '', string=extr_tlist)
     extr_tlist = extr_tlist.split("\n")
-    # print(extr_tlist)
-    # print(len(extr_tlist))
     return extr_tlist
 
 
@@ -50,13 +46,13 @@ def sort_tablets(trgt_tbl, tablet_list):
         output_ksck = temp_output.read().strip()
         temp_output.close()
         output_ksck = json.loads(output_ksck.decode("utf-8", "ignore"))
-        for i in range(0, 3):
+        tgrt_yn = False
+        for i in range(0, len(output_ksck['tablet_summaries'][0]['replicas'])):
             ts_address = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_address']
             ts_address = re.sub(':7050', '', string=ts_address)
             state = output_ksck['tablet_summaries'][0]['replicas'][i]['state']
             # print(ts_address)
             # Target TS 가 포함된 replica 체크하여 포함되지 않는 tablet 들로 list 구성
-            tgrt_yn = False
             if ts_address == sys.argv[2] or state == "INITIALIZED":
                 # print("move_replica 대상아님")
                 tgrt_yn = False
@@ -91,27 +87,26 @@ def ksck_single_tablet(a_tablet):
     return output_ksck
 
 
+def extract_ts_uuid(ts_id):
+    ts_uuid = subprocess.Popen('curl -s http://' + ts_id + ':8050/tablets '
+                                                           '| grep -w "server uuid"'
+                               , stdout=subprocess.PIPE
+                               , shell=True).stdout
+    ext_ts_uuid = ts_uuid.read().strip()
+    ts_uuid.close()
+    ext_ts_uuid = re.sub('server uuid ', '', string=ext_ts_uuid)
+    ext_ts_uuid = re.sub('</pre>', '', string=ext_ts_uuid)
+    return ext_ts_uuid
+
+
 def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     # cat /Users/dongjin/Downloads/kudu_rebalancing_Test/view-source_sp-dat-hdp03-slv22.kbin.io_8050_tablets.html |
     # grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
     # curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
-    ts_uuid = subprocess.Popen('curl -s http://' + src_ts + ':8050/tablets '
-                                                            '| grep -w "server uuid"'
-                               , stdout=subprocess.PIPE
-                               , shell=True).stdout
-    src_ts_uuid = ts_uuid.read().strip()
-    ts_uuid.close()
-    src_ts_uuid = re.sub('server uuid ', '', string=src_ts_uuid)
-    src_ts_uuid = re.sub('</pre>', '', string=src_ts_uuid)
+    src_ts_uuid = extract_ts_uuid(src_ts)
+    global src_ts_uuid
     # print("src_ts_uuid %s" % src_ts_uuid)
-    ts_uuid = subprocess.Popen('curl -s http://' + trgt_ts + ':8050/tablets '
-                                                             '| grep -w "server uuid"'
-                               , stdout=subprocess.PIPE
-                               , shell=True).stdout
-    trgt_ts_uuid = ts_uuid.read().strip()
-    ts_uuid.close()
-    trgt_ts_uuid = re.sub('server uuid ', '', string=trgt_ts_uuid)
-    trgt_ts_uuid = re.sub('</pre>', '', string=trgt_ts_uuid)
+    trgt_ts_uuid = extract_ts_uuid(trgt_ts)
     # print("trgt_ts_uuid %s" % trgt_ts_uuid)
     print("Start moving tablets...")
     moved_tlist = []
@@ -123,7 +118,7 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
         subprocess.call(cmd_move, shell=True)
         time.sleep(5)
         print(tablet_list[i])
-        # 삭제된 tablet 리스트에 저장
+        # moving tablet id 리스트에 저장
         moved_tlist.append(tablet_list[i])
     time.sleep(30)
     # cmd_check = 'kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 | grep -E "Bootstrap|Copy" | wc -l'
@@ -132,12 +127,25 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     #     moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
     #     print("moving tablet count: %s" % moving_cnt)
     #     time.sleep(60)
-    moving_cnt = len(moved_tlist)
+    # checking status of the moving job
+    # output_ksck = ksck_tablets(moved_tlist)
+    # moving_cnt = len(output_ksck['tablet_summaries'])
+    # if moving_cnt == 0:
+    #     sys.exit("There is no moving tablet...")
+    # else:
+    #     print("move_replica::moving_cnt: %s" % moving_cnt)
+    return moved_tlist
+
+
+def checking_move_replica(tablet_list):
+    output_ksck = ksck_tablets(tablet_list)
+    moving_cnt = len(output_ksck['tablet_summaries'])
     while moving_cnt > 0:
-        output_ksck = ksck_tablets(moved_tlist)
-        for i in range(len(moved_tlist)):
+        output_ksck = ksck_tablets(tablet_list)
+        print("tablet_summaries: %s" % len(output_ksck['tablet_summaries']))
+        for i in range(len(output_ksck['tablet_summaries'])):
             check_count = 0
-            for j in range(0, 3):
+            for j in range(len(output_ksck['tablet_summaries'][i]['replicas'])):
                 state = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['state']
                 if state == "INITIALIZED":
                     tablet_id = output_ksck['tablet_summaries'][i]['replicas'][j]['status_pb']['tablet_id']
@@ -149,9 +157,15 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
                     print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
             if check_count == 0:
                 moving_cnt = moving_cnt - 1
+        time.sleep(60)
+    print("checking_move_replica::moving_cnt: %s" % moving_cnt)
+    return moving_cnt
+
+
+def remove_replica(tablet_list, check_count):
     # moved 된 tablet 삭제
-    if moving_cnt == 0:
-        for t in moved_tlist:
+    if check_count == 0:
+        for t in tablet_list:
             print("completed to move this tablet: %s" % t)
             output_ksck = ksck_single_tablet(t)
             leader_ts_uuid = output_ksck['tablet_summaries'][0]['master_cstate']['leader_uuid']
@@ -201,4 +215,6 @@ else:
         print("There is nothing to move...")
     else:
         print("Execute move_replica...")
-        move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
+        moving_tblt_list = move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
+        chk_cnt = checking_move_replica(moving_tblt_list)
+        remove_replica(moving_tblt_list, chk_cnt)
