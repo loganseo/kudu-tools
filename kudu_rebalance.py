@@ -104,8 +104,8 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     # cat /Users/dongjin/Downloads/kudu_rebalancing_Test/view-source_sp-dat-hdp03-slv22.kbin.io_8050_tablets.html |
     # grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
     # curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
-    src_ts_uuid = extract_ts_uuid(src_ts)
     global src_ts_uuid
+    src_ts_uuid = extract_ts_uuid(src_ts)
     # print("src_ts_uuid %s" % src_ts_uuid)
     trgt_ts_uuid = extract_ts_uuid(trgt_ts)
     # print("trgt_ts_uuid %s" % trgt_ts_uuid)
