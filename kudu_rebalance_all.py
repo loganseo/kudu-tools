@@ -5,6 +5,7 @@ import re
 import subprocess
 import time
 import unittest
+from collections import OrderedDict
 
 if len(sys.argv) < 2:
     raise ValueError("Usage: kudu_rebalance_all.py <Master Address>, <Table name>, <Range Partition("
@@ -198,43 +199,92 @@ def remove_replica(tablet_list, moved_count):
 
 
 # Tablet Server List 추출
-# kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 -ksck_format=json_pretty -sections=TSERVER_SUMMARIES
 def extract_tserver(masters):
     cmd_extrct = "kudu cluster ksck " + masters + " " \
-               "-ksck_format=json_pretty -sections=TSERVER_SUMMARIES"
+                                                  "-ksck_format=json_pretty -sections=TSERVER_SUMMARIES"
     temp_output = subprocess.Popen(cmd_extrct, stdout=subprocess.PIPE, shell=True).stdout
     output_tserver = temp_output.read().strip()
     temp_output.close()
     output_tserver = json.loads(output_tserver.decode("utf-8", "ignore"))
     return output_tserver
 
-# Table Range Partition 의 Tablet 분포도 추출
+
+# Table Range Partition 의 Tablet 분포도 추출(JSON)
+def extract_dist_status(master_addrs):
+    output_tserver = extract_tserver(master_addrs)
+    tserver_list = []
+    for i in range(len(output_tserver['tserver_summaries'])):
+        address = output_tserver['tserver_summaries'][i]['address']
+        ts_address = re.sub(':7050', '', string=address)
+        print("ts_address: %s" % ts_address)
+        tserver_list.append(ts_address)
+    tablet_dist_status = OrderedDict()
+    tablet_dist_status["tablet_summaries"] = []
+    total_count = 0
+    for ts in tserver_list:
+        extracted_tablets = extract_tablets(ts, sys.argv[2], sys.argv[3])
+        print("%s" % len(extracted_tablets))
+        total_count = total_count + len(extracted_tablets)
+        tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": len(extracted_tablets)})
+    tablet_dist_status["total_count"] = total_count
+    # Tablet Server 당 적절한 Tablet 수
+    tablet_dist_status["expected_count"] = total_count / len(tserver_list)
+    json_tablet_dist_status = json.dumps(tablet_dist_status, ensure_ascii=False, indent=4)
+    return json_tablet_dist_status
 
 
-src_extracted_tablets = extract_tablets(sys.argv[1], sys.argv[3], sys.argv[4])
-trgt_extracted_tablets = extract_tablets(sys.argv[2], sys.argv[3], sys.argv[4])
-# src_extracted_tablets = extract_tablets("sp-dat-hdp03-slv22.kbin.io", "cbs.corebanking_log", "20190801")
-# trgt_extracted_tablets = extract_tablets("sp-dat-hdp03-slv04.kbin.io", "cbs.corebanking_log", "20190801")
+json_tablet_status = extract_dist_status(sys.argv[1])
+json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
+print(json_tablet_status)
 
-sorted_tablets = sort_tablets(sys.argv[3], src_extracted_tablets)
+# 적정수 - 보유수 = +인 TServer 와 -인 TServer 분리해서 리스트 저장
+exceeded_ts = OrderedDict()
+less_ts = OrderedDict()
+exceeded_ts["exceeded_summaries"] = []
+less_ts["less_summaries"] = []
+expected_count = json_tablet_status["expected_count"]
+for i in range(len(json_tablet_status['tablet_summaries'])):
+    result = json_tablet_status['tablet_summaries'][i]['tablet_count'] - expected_count
+    if result > 0:
+        exceeded_ts["exceeded_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
+                                                  "tablet_count": json_tablet_status['tablet_summaries'][i][
+                                                      'tablet_count'], "result_count": result})
+    elif result <= 0:
+        less_ts["less_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
+                                              "tablet_count": json_tablet_status['tablet_summaries'][i][
+                                                  'tablet_count'], "result_count": result})
+# res = sorted(exceeded_ts["exceeded_summaries"].items(), key=lambda kv:kv[1]['result_count'], reverse=True)
+# print(json.dumps(res, ensure_ascii=False, indent=4))
+# print(json.dumps(exceeded_ts, ensure_ascii=False, indent=4))
+# print(json.dumps(less_ts, ensure_ascii=False, indent=4))
+
+
+# Tablet 이동 (조건: (1) 큰수->작은수, (2) Target TS 에 없는 Tablet)
+
+
+# src_extracted_tablets = extract_tablets(sys.argv[1], sys.argv[3], sys.argv[4])
+# trgt_extracted_tablets = extract_tablets(sys.argv[2], sys.argv[3], sys.argv[4])
+
+
+# sorted_tablets = sort_tablets(sys.argv[3], src_extracted_tablets)
 # print("remain tablets after excepted: %s" % len(sorted_tablets))
 
 # 3) 이동 대상 TS 개수 산정
-move_num_ts = (len(sorted_tablets) - len(trgt_extracted_tablets)) / 2
+# move_num_ts = (len(sorted_tablets) - len(trgt_extracted_tablets)) / 2
 
 # 4) pre-execution 인 경우 실행 계획 출력하고 실제 실행은 하지 않음
-if sys.argv[5] is not None and sys.argv[5] == "true":
-    print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
-    print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
-    print("Number of target tablets: %s" % move_num_ts)
-else:
-    print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
-    print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
-    print("Number of target tablets: %s" % move_num_ts)
-    if move_num_ts <= 0:
-        print("There is nothing to move...")
-    else:
-        print("Execute move_replica...")
-        moving_tblt_list = move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
-        moved_cnt = checking_move_replica(moving_tblt_list)
-        remove_replica(moving_tblt_list, moved_cnt)
+# if sys.argv[5] is not None and sys.argv[5] == "true":
+#     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
+#     print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
+#     print("Number of target tablets: %s" % move_num_ts)
+# else:
+#     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
+#     print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
+#     print("Number of target tablets: %s" % move_num_ts)
+#     if move_num_ts <= 0:
+#         print("There is nothing to move...")
+#     else:
+#         print("Execute move_replica...")
+#         moving_tblt_list = move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
+#         moved_cnt = checking_move_replica(moving_tblt_list)
+#         remove_replica(moving_tblt_list, moved_cnt)
