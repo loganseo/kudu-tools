@@ -1,4 +1,5 @@
 # coding=utf-8
+import Queue
 import sys
 import json
 import re
@@ -9,22 +10,28 @@ from collections import OrderedDict
 
 if len(sys.argv) < 2:
     raise ValueError("Usage: kudu_rebalance_all.py <Master Address>, <Table name>, <Range Partition("
-                     "ex: 20190801)>, pre-execution")
+                     "ex: 20190801)>, <max_moves_tablets(default 3)>, pre-execution")
 
 # TODO: add parameter validation check
+global masters
+global table_name
+global target_partition
+global max_moves
+global pre_exe
+
 for arg in sys.argv:
     print('arg value = ', arg)
+    masters = sys.argv[1]
+    table_name = sys.argv[2]
+    target_partition = sys.argv[3]
+    max_moves = sys.argv[4]
+    pre_exe = sys.argv[5]
 
 
-# TODO: 전체 Tablet Server 의 Tablet 개수를 추출하고, 상위 TS -> 하위 TS 로 move 하는 로직
-
-
-# 1) Source TS Web UI 에서 Tablet 리스트 추출
-def extract_tablets(src_ts, trgt_tbl, partition):
-    # 추출 예제: curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "cbs.corebanking_log" -A2
-    #  | grep "PARTITION &quot;20190801&quot;" -B1 | grep -o id=.*\" | sed 's/id=//g' | sed 's/"//g'
-    cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + trgt_tbl + '" -A2 ' \
-                                                                                     '| grep "PARTITION &quot;' + partition + '&quot;" -B1 | grep -o id=.*'
+# Source TS Web UI 에서 Tablet 리스트 추출
+def extract_tablets(src_ts):
+    cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + table_name + '" -A2 ' \
+                                                                                       '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -36,14 +43,12 @@ def extract_tablets(src_ts, trgt_tbl, partition):
     return extr_tlist
 
 
-# 2) 추출된 Tablet 리스트에서 Target TS 가 포함 되있거나, 이미 실행된 move_replica 에 포함된 경우 해당 replica 는 제외
-def sort_tablets(trgt_tbl, tablet_list):
+# 추출된 Tablet 리스트에서 Target TS 가 포함 되있거나, 이미 실행된 move_replica 에 포함된 경우 해당 replica 는 제외
+def sort_tablets(target_ts, tablet_list):
     sorted_tlist = []
     for t in tablet_list:
-        # kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 -ksck_format=json_pretty
-        # -tables=<table_name> -tablets=<tablet_id>
-        cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-                   "-ksck_format=json_pretty -tables=" + trgt_tbl + " -tablets=" + t
+        cmd_ksck = "kudu cluster ksck " + masters + " " \
+                                                    "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + t
         temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
         output_ksck = temp_output.read().strip()
         temp_output.close()
@@ -55,7 +60,7 @@ def sort_tablets(trgt_tbl, tablet_list):
             state = output_ksck['tablet_summaries'][0]['replicas'][i]['state']
             # print(ts_address)
             # Target TS 가 포함된 replica 체크하여 포함되지 않는 tablet 들로 list 구성
-            if ts_address == sys.argv[2] or state == "INITIALIZED":
+            if ts_address == target_ts or state == "INITIALIZED":
                 # print("move_replica 대상아님")
                 tgrt_yn = False
                 break
@@ -70,8 +75,8 @@ def sort_tablets(trgt_tbl, tablet_list):
 def ksck_tablets(tlist):
     moved_tlist_str = ','.join(map(str, tlist))
     print("moved_tlist_str: %s" % moved_tlist_str)
-    cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-               "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + moved_tlist_str
+    cmd_ksck = "kudu cluster ksck " + masters + " " \
+                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + moved_tlist_str
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -80,8 +85,8 @@ def ksck_tablets(tlist):
 
 
 def ksck_single_tablet(a_tablet):
-    cmd_ksck = "kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
-               "-ksck_format=json_pretty -tables=" + sys.argv[3] + " -tablets=" + a_tablet
+    cmd_ksck = "kudu cluster ksck " + masters + " " \
+                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + a_tablet
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -90,8 +95,7 @@ def ksck_single_tablet(a_tablet):
 
 
 def extract_ts_uuid(ts_id):
-    ts_uuid = subprocess.Popen('curl -s http://' + ts_id + ':8050/tablets '
-                                                           '| grep -w "server uuid"'
+    ts_uuid = subprocess.Popen('curl -s http://' + ts_id + ':8050/tablets | grep -w "server uuid"'
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
     ext_ts_uuid = ts_uuid.read().strip()
@@ -102,9 +106,6 @@ def extract_ts_uuid(ts_id):
 
 
 def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
-    # cat /Users/dongjin/Downloads/kudu_rebalancing_Test/view-source_sp-dat-hdp03-slv22.kbin.io_8050_tablets.html |
-    # grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
-    # curl -s http://sp-dat-hdp03-slv22.kbin.io:8050/tablets | grep -w "server uuid"  | sed "s/server uuid //g" | sed "s/<\/pre>//g"
     global src_ts_uuid
     src_ts_uuid = extract_ts_uuid(src_ts)
     # print("src_ts_uuid %s" % src_ts_uuid)
@@ -113,8 +114,7 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
     print("Start moving tablets...")
     moved_tlist = []
     for i in range(num_ts):
-        cmd_move = "nohup kudu tablet change_config move_replica " \
-                   "sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 " \
+        cmd_move = "nohup kudu tablet change_config move_replica " + masters + " " \
                    + tablet_list[i] + " " + src_ts_uuid + " " + trgt_ts_uuid + " & > /dev/null 2>&1"
         # print(cmd_move)
         subprocess.call(cmd_move, shell=True)
@@ -123,19 +123,6 @@ def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
         # moving tablet id 리스트에 저장
         moved_tlist.append(tablet_list[i])
     time.sleep(60)
-    # cmd_check = 'kudu cluster ksck sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 | grep -E "Bootstrap|Copy" | wc -l'
-    # moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
-    # while moving_cnt > 0:
-    #     moving_cnt = int(subprocess.check_output(cmd_check, shell=True))
-    #     print("moving tablet count: %s" % moving_cnt)
-    #     time.sleep(60)
-    # checking status of the moving job
-    # output_ksck = ksck_tablets(moved_tlist)
-    # moving_cnt = len(output_ksck['tablet_summaries'])
-    # if moving_cnt == 0:
-    #     sys.exit("There is no moving tablet...")
-    # else:
-    #     print("move_replica::moving_cnt: %s" % moving_cnt)
     return moved_tlist
 
 
@@ -176,19 +163,12 @@ def remove_replica(tablet_list, moved_count):
             print("completed to move this tablet: %s" % t)
             output_ksck = ksck_single_tablet(t)
             leader_ts_uuid = output_ksck['tablet_summaries'][0]['master_cstate']['leader_uuid']
-            # for i in range(0, 3):
-            #     is_leader = output_ksck['tablet_summaries'][0]['replicas'][i]['is_leader']
-            #     # print("is_leader: %s" % is_leader)
-            #     if is_leader:
-            #         leader_ts_uuid = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_uuid']
             time.sleep(5)
-            cmd_remove = 'kudu tablet change_config remove_replica sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 ' \
-                         + t + ' ' + src_ts_uuid
-            # print("leader tablet server uuid: %s" % leader_ts_uuid)
-            # print("source tablet server uuid: %s" % src_ts_uuid)
+            cmd_remove = "kudu tablet change_config remove_replica " + masters + " " \
+                         + t + " " + src_ts_uuid
             if src_ts_uuid == leader_ts_uuid:
                 print("Doing leader_step_down")
-                cmd_leader_step_down = 'kudu tablet leader_step_down sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03 ' + t
+                cmd_leader_step_down = "kudu tablet leader_step_down " + masters + " " + t
                 subprocess.call(cmd_leader_step_down, shell=True)
                 time.sleep(5)
                 subprocess.call(cmd_remove, shell=True)
@@ -199,9 +179,8 @@ def remove_replica(tablet_list, moved_count):
 
 
 # Tablet Server List 추출
-def extract_tserver(masters):
-    cmd_extrct = "kudu cluster ksck " + masters + " " \
-                                                  "-ksck_format=json_pretty -sections=TSERVER_SUMMARIES"
+def extract_tserver():
+    cmd_extrct = "kudu cluster ksck " + masters + " -ksck_format=json_pretty -sections=TSERVER_SUMMARIES"
     temp_output = subprocess.Popen(cmd_extrct, stdout=subprocess.PIPE, shell=True).stdout
     output_tserver = temp_output.read().strip()
     temp_output.close()
@@ -210,8 +189,8 @@ def extract_tserver(masters):
 
 
 # Table Range Partition 의 Tablet 분포도 추출(JSON)
-def extract_dist_status(master_addrs):
-    output_tserver = extract_tserver(master_addrs)
+def extract_dist_status():
+    output_tserver = extract_tserver()
     tserver_list = []
     for i in range(len(output_tserver['tserver_summaries'])):
         address = output_tserver['tserver_summaries'][i]['address']
@@ -222,7 +201,7 @@ def extract_dist_status(master_addrs):
     tablet_dist_status["tablet_summaries"] = []
     total_count = 0
     for ts in tserver_list:
-        extracted_tablets = extract_tablets(ts, sys.argv[2], sys.argv[3])
+        extracted_tablets = extract_tablets(ts)
         print("%s" % len(extracted_tablets))
         total_count = total_count + len(extracted_tablets)
         tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": len(extracted_tablets)})
@@ -233,7 +212,8 @@ def extract_dist_status(master_addrs):
     return json_tablet_dist_status
 
 
-json_tablet_status = extract_dist_status(sys.argv[1])
+# Starting Kudu Rebalancing Job
+json_tablet_status = extract_dist_status()
 json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
 print(json_tablet_status)
 
@@ -251,17 +231,73 @@ for i in range(len(json_tablet_status['tablet_summaries'])):
                                                       'tablet_count'], "result_count": result})
     elif result <= 0:
         less_ts["less_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
-                                              "tablet_count": json_tablet_status['tablet_summaries'][i][
-                                                  'tablet_count'], "result_count": result})
-# res = sorted(exceeded_ts["exceeded_summaries"].items(), key=lambda kv:kv[1]['result_count'], reverse=True)
-# print(json.dumps(res, ensure_ascii=False, indent=4))
-# print(json.dumps(exceeded_ts, ensure_ascii=False, indent=4))
-# print(json.dumps(less_ts, ensure_ascii=False, indent=4))
+                                          "tablet_count": json_tablet_status['tablet_summaries'][i][
+                                              'tablet_count'], "result_count": result})
+# Sorting
+exceeded_ts["exceeded_summaries"] = sorted(exceeded_ts["exceeded_summaries"],
+                                           key=lambda item: item['result_count'], reverse=True)
+less_ts["less_summaries"] = sorted(less_ts["less_summaries"], key=lambda item: item['result_count'])
+print(json.dumps(exceeded_ts, ensure_ascii=False, indent=4))
+print(json.dumps(less_ts, ensure_ascii=False, indent=4))
 
+# Tablet 이동 실행 계획 만들기 (조건: (1) 큰수->작은수, (2) Target TS 에 없는 Tablet)
+excd_queue = Queue.Queue()
+less_queue = Queue.Queue()
+for i in range(len(exceeded_ts['exceeded_summaries'])):
+    excd_queue.put(exceeded_ts['exceeded_summaries'][i])
+for j in range(len(less_ts['less_summaries'])):
+    less_queue.put(less_ts['less_summaries'][j])
 
-# Tablet 이동 (조건: (1) 큰수->작은수, (2) Target TS 에 없는 Tablet)
-
-
+candidate_queue = Queue.Queue()
+while excd_queue.qsize():
+    excd = excd_queue.get()
+    excd_addr = excd["ts_address"]
+    excd_cnt = excd["result_count"]
+    print("\n1. source TS: %s, 이동해야 할 수(excd_cnt): %s" % (excd_addr, excd_cnt))
+    while less_queue.qsize():
+        # excd_cnt 수 만큼 tablet 들을 candidate_queue 에 담은 경우 해당 순서의 TS 를 종료하고, 다음 순서의 less TS 으로 넘어간다.
+        if excd_cnt == 0:
+            print("excd_cnt == 0")
+            break
+        less = less_queue.get()
+        less_addr = less["ts_address"]
+        less_cnt = less["result_count"]
+        print("2. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (excd_cnt, less_cnt, excd_addr, less_addr))
+        # excd_cnt 가 less_cnt 보다 적은 경우는 excd_cnt 만큼 candidate_queue 에 담은 다음 나머지 TS 수를 다음 excd TS 에 대한
+        # tablet 을 담는다. excd_addr 은 변경되고, less_addr 은 유지해야 한다.
+        if excd_cnt < abs(less_cnt):
+            print("excd_cnt < abs(less_cnt)")
+            print(unicode("2-1. %s 만큼 현재 excd_addr(%s) 에서 candidate_queue 에 후보 담는다." % (excd_cnt, excd_addr)))
+            for i in range(excd_cnt):
+                candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
+                                     "tablet_id": sorted_tablets[i]})
+            # 나머지 부분 다음 excd_addr 에서 추출해서 담는다.
+            print("    %s 개 후보 담기 완료" % excd_cnt)
+            less_cnt = less_cnt + excd_cnt
+            excd = excd_queue.get()
+            excd_addr = excd["ts_address"]
+            excd_cnt = excd["result_count"]
+            print(unicode("2-2. 나머지 부분 %s 개를 다음 순서의 excd_addr(%s) 에서 추출해서 담는다." % (abs(less_cnt), excd_addr)))
+            print("2-3. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (
+            excd_cnt, less_cnt, excd_addr, less_addr))
+            excd_tablets = extract_tablets(excd_addr)
+            sorted_tablets = sort_tablets(less_addr, excd_tablets)
+            for i in range(abs(less_cnt)):
+                candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
+                                     "tablet_id": sorted_tablets[i]})
+            print("    %s 개 후보 담기 완료" % abs(less_cnt))
+            excd_cnt = excd_cnt - abs(less_cnt)
+            print("2-4. 나머지 excd_cnt 는 %s 이고, 다음 less_addr 으로 이동" % excd_cnt)
+            # break
+        else:
+            print("    %s 개 후보 담기 완료" % abs(less_cnt))
+            for i in range(less_cnt):
+                candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
+                                     "tablet_id": sorted_tablets[i]})
+            excd_cnt = excd_cnt - abs(less_cnt)
+            print("3. 이동 시킨 후 이동해야 할 수(excd_cnt): %s" % excd_cnt)
+while candidate_queue.qsize():
+    print(candidate_queue.get())
 # src_extracted_tablets = extract_tablets(sys.argv[1], sys.argv[3], sys.argv[4])
 # trgt_extracted_tablets = extract_tablets(sys.argv[2], sys.argv[3], sys.argv[4])
 
