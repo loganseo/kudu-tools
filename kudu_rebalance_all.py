@@ -5,8 +5,12 @@ import json
 import re
 import subprocess
 import time
+import copy
 import unittest
 from collections import OrderedDict
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 if len(sys.argv) < 2:
     raise ValueError("Usage: kudu_rebalance_all.py <Master Address>, <Table name>, <Range Partition("
@@ -31,7 +35,7 @@ for arg in sys.argv:
 # Source TS Web UI 에서 Tablet 리스트 추출
 def extract_tablets(src_ts):
     cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + table_name + '" -A2 ' \
-                                                                                       '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
+            '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -48,7 +52,7 @@ def sort_tablets(target_ts, tablet_list):
     sorted_tlist = []
     for t in tablet_list:
         cmd_ksck = "kudu cluster ksck " + masters + " " \
-                                                    "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + t
+                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + t
         temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
         output_ksck = temp_output.read().strip()
         temp_output.close()
@@ -76,7 +80,7 @@ def ksck_tablets(tlist):
     moved_tlist_str = ','.join(map(str, tlist))
     print("moved_tlist_str: %s" % moved_tlist_str)
     cmd_ksck = "kudu cluster ksck " + masters + " " \
-                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + moved_tlist_str
+            "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + moved_tlist_str
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -86,7 +90,7 @@ def ksck_tablets(tlist):
 
 def ksck_single_tablet(a_tablet):
     cmd_ksck = "kudu cluster ksck " + masters + " " \
-                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + a_tablet
+            "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + a_tablet
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -212,6 +216,27 @@ def extract_dist_status():
     return json_tablet_dist_status
 
 
+# 이미 candidate_queue 존재하는 tablet 제거
+def check_duplicate_tablet(c_queue, s_tablets):
+    temp_queue_list = []
+    while c_queue.qsize():
+        temp_str = c_queue.get()
+        temp_queue_list.append(temp_str['tablet_id'])
+    temp_dup_list = []
+    for list_num in range(len(s_tablets)):
+        for i in range(len(temp_queue_list)):
+            # print("%s == %s" % (s_tablets[list_num], temp_queue_list[i]))
+            if s_tablets[list_num] == temp_queue_list[i]:
+                temp_dup_list.append(list_num)
+    print("len(temp_dup_list): %s" % len(temp_dup_list))
+    print("len(s_tablets): %s" % len(s_tablets))
+    if len(temp_dup_list) > 0:
+        for dup_cnt in range(len(temp_dup_list)):
+            s_tablets.pop(temp_dup_list[dup_cnt])
+    print("len(s_tablets): %s" % len(s_tablets))
+    return s_tablets
+
+
 # Starting Kudu Rebalancing Job
 json_tablet_status = extract_dist_status()
 json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
@@ -229,7 +254,7 @@ for i in range(len(json_tablet_status['tablet_summaries'])):
         exceeded_ts["exceeded_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
                                                   "tablet_count": json_tablet_status['tablet_summaries'][i][
                                                       'tablet_count'], "result_count": result})
-    elif result <= 0:
+    elif result < 0:
         less_ts["less_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
                                           "tablet_count": json_tablet_status['tablet_summaries'][i][
                                               'tablet_count'], "result_count": result})
@@ -243,10 +268,16 @@ print(json.dumps(less_ts, ensure_ascii=False, indent=4))
 # Tablet 이동 실행 계획 만들기 (조건: (1) 큰수->작은수, (2) Target TS 에 없는 Tablet)
 excd_queue = Queue.Queue()
 less_queue = Queue.Queue()
+excd_result_cnt = 0
+less_result_cnt = 0
 for i in range(len(exceeded_ts['exceeded_summaries'])):
     excd_queue.put(exceeded_ts['exceeded_summaries'][i])
+    excd_result_cnt = excd_result_cnt + exceeded_ts['exceeded_summaries'][i]['result_count']
 for j in range(len(less_ts['less_summaries'])):
     less_queue.put(less_ts['less_summaries'][j])
+    less_result_cnt = less_result_cnt + less_ts['less_summaries'][j]['result_count']
+
+print("move 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
 
 candidate_queue = Queue.Queue()
 while excd_queue.qsize():
@@ -268,11 +299,15 @@ while excd_queue.qsize():
         if excd_cnt < abs(less_cnt):
             print("excd_cnt < abs(less_cnt)")
             print(unicode("2-1. %s 만큼 현재 excd_addr(%s) 에서 candidate_queue 에 후보 담는다." % (excd_cnt, excd_addr)))
+            excd_tablets = extract_tablets(excd_addr)
+            sorted_tablets = sort_tablets(less_addr, excd_tablets)
+            if candidate_queue.qsize() > 0:
+                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
             for i in range(excd_cnt):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
             # 나머지 부분 다음 excd_addr 에서 추출해서 담는다.
-            print("    %s 개 후보 담기 완료" % excd_cnt)
+            print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (excd_cnt, candidate_queue.qsize()))
             less_cnt = less_cnt + excd_cnt
             excd = excd_queue.get()
             excd_addr = excd["ts_address"]
@@ -282,18 +317,24 @@ while excd_queue.qsize():
             excd_cnt, less_cnt, excd_addr, less_addr))
             excd_tablets = extract_tablets(excd_addr)
             sorted_tablets = sort_tablets(less_addr, excd_tablets)
+            if candidate_queue.qsize() > 0:
+                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
             for i in range(abs(less_cnt)):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
-            print("    %s 개 후보 담기 완료" % abs(less_cnt))
+            print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (abs(less_cnt), candidate_queue.qsize()))
             excd_cnt = excd_cnt - abs(less_cnt)
             print("2-4. 나머지 excd_cnt 는 %s 이고, 다음 less_addr 으로 이동" % excd_cnt)
             # break
         else:
-            print("    %s 개 후보 담기 완료" % abs(less_cnt))
-            for i in range(less_cnt):
+            excd_tablets = extract_tablets(excd_addr)
+            sorted_tablets = sort_tablets(less_addr, excd_tablets)
+            if candidate_queue.qsize() > 0:
+                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
+            for i in range(abs(less_cnt)):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
+            print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (abs(less_cnt), candidate_queue.qsize()))
             excd_cnt = excd_cnt - abs(less_cnt)
             print("3. 이동 시킨 후 이동해야 할 수(excd_cnt): %s" % excd_cnt)
 while candidate_queue.qsize():
