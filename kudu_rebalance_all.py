@@ -35,7 +35,7 @@ for arg in sys.argv:
 # Source TS Web UI 에서 Tablet 리스트 추출
 def extract_tablets(src_ts):
     cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + table_name + '" -A2 ' \
-            '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
+                                                                                       '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -52,7 +52,7 @@ def sort_tablets(target_ts, tablet_list):
     sorted_tlist = []
     for t in tablet_list:
         cmd_ksck = "kudu cluster ksck " + masters + " " \
-                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + t
+                                                    "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + t
         temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
         output_ksck = temp_output.read().strip()
         temp_output.close()
@@ -80,7 +80,7 @@ def ksck_tablets(tlist):
     moved_tlist_str = ','.join(map(str, tlist))
     print("moved_tlist_str: %s" % moved_tlist_str)
     cmd_ksck = "kudu cluster ksck " + masters + " " \
-            "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + moved_tlist_str
+                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + moved_tlist_str
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -90,7 +90,7 @@ def ksck_tablets(tlist):
 
 def ksck_single_tablet(a_tablet):
     cmd_ksck = "kudu cluster ksck " + masters + " " \
-            "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + a_tablet
+                                                "-ksck_format=json_pretty -tables=" + table_name + " -tablets=" + a_tablet
     temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
     output_ksck = temp_output.read().strip()
     temp_output.close()
@@ -109,30 +109,20 @@ def extract_ts_uuid(ts_id):
     return ext_ts_uuid
 
 
-def move_replica(tablet_list, num_ts, src_ts, trgt_ts):
-    global src_ts_uuid
+def move_replica(t_id, src_ts, trgt_ts):
     src_ts_uuid = extract_ts_uuid(src_ts)
-    # print("src_ts_uuid %s" % src_ts_uuid)
     trgt_ts_uuid = extract_ts_uuid(trgt_ts)
-    # print("trgt_ts_uuid %s" % trgt_ts_uuid)
     print("Start moving tablets...")
-    moved_tlist = []
-    for i in range(num_ts):
-        cmd_move = "nohup kudu tablet change_config move_replica " + masters + " " \
-                   + tablet_list[i] + " " + src_ts_uuid + " " + trgt_ts_uuid + " & > /dev/null 2>&1"
-        # print(cmd_move)
-        subprocess.call(cmd_move, shell=True)
-        time.sleep(5)
-        print(tablet_list[i])
-        # moving tablet id 리스트에 저장
-        moved_tlist.append(tablet_list[i])
-    time.sleep(60)
-    return moved_tlist
+    cmd_move = "nohup kudu tablet change_config move_replica " + masters + " " \
+               + t_id + " " + src_ts_uuid + " " + trgt_ts_uuid + " & > /dev/null 2>&1"
+    subprocess.call(cmd_move, shell=True)
+    time.sleep(10)
 
 
 def checking_move_replica(tablet_list):
     output_ksck = ksck_tablets(tablet_list)
     moving_cnt = len(output_ksck['tablet_summaries'])
+    # move_replica 가 실행된 tablet 들이 모두 수행 완료될 때 까지 while 문 수행
     while moving_cnt > 0:
         output_ksck = ksck_tablets(tablet_list)
         print("tablet_summaries: %s" % len(output_ksck['tablet_summaries']))
@@ -151,28 +141,30 @@ def checking_move_replica(tablet_list):
                     print("state: %s" % state)
                     check_count = check_count + 1
         print("moving_cnt: %s, check_count: %s" % (moving_cnt, check_count))
+        # moving_cnt: 초기 move_replica 대상 tablet 수 -> 실제 move_replica 가 실행된 수
+        # check_count: 실제 move_replica 가 실행된 수
         if moving_cnt > check_count:
             moving_cnt = check_count
-        # if check_count == 0:
-        #     moving_cnt = moving_cnt - 1
         time.sleep(60)
     print("checking_move_replica::moving_cnt: %s" % moving_cnt)
     return moving_cnt
 
 
-def remove_replica(tablet_list, moved_count):
+def remove_replica(moved_list, moved_count):
     # moved 된 tablet 삭제
     if moved_count == 0:
-        for t in tablet_list:
-            print("completed to move this tablet: %s" % t)
-            output_ksck = ksck_single_tablet(t)
+        for t in moved_list:
+            s_ts = t['source_ts']
+            t_id = t['tablet_id']
+            print("completed to move this tablet: %s" % t_id)
+            output_ksck = ksck_single_tablet(t_id)
             leader_ts_uuid = output_ksck['tablet_summaries'][0]['master_cstate']['leader_uuid']
             time.sleep(5)
             cmd_remove = "kudu tablet change_config remove_replica " + masters + " " \
-                         + t + " " + src_ts_uuid
-            if src_ts_uuid == leader_ts_uuid:
+                         + t_id + " " + s_ts
+            if s_ts == leader_ts_uuid:
                 print("Doing leader_step_down")
-                cmd_leader_step_down = "kudu tablet leader_step_down " + masters + " " + t
+                cmd_leader_step_down = "kudu tablet leader_step_down " + masters + " " + t_id
                 subprocess.call(cmd_leader_step_down, shell=True)
                 time.sleep(5)
                 subprocess.call(cmd_remove, shell=True)
@@ -217,23 +209,22 @@ def extract_dist_status():
 
 
 # 이미 candidate_queue 존재하는 tablet 제거
-def check_duplicate_tablet(c_queue, s_tablets):
-    temp_queue_list = []
-    while c_queue.qsize():
-        temp_str = c_queue.get()
-        temp_queue_list.append(temp_str['tablet_id'])
+def check_duplicate_tablet(c_list, s_tablets):
     temp_dup_list = []
+    # source TS 에서 추출된 tablet list 중 candidate 와 중복되는 tablet 추출
     for list_num in range(len(s_tablets)):
-        for i in range(len(temp_queue_list)):
-            # print("%s == %s" % (s_tablets[list_num], temp_queue_list[i]))
-            if s_tablets[list_num] == temp_queue_list[i]:
-                temp_dup_list.append(list_num)
-    print("len(temp_dup_list): %s" % len(temp_dup_list))
-    print("len(s_tablets): %s" % len(s_tablets))
+        for c_num in range(len(c_list)):
+            if s_tablets[list_num] == c_list[c_num]['tablet_id']:
+                # print("  ㄴ 중복 tablet_id: %s" % s_tablets[list_num])
+                temp_dup_list.append(s_tablets[list_num])
+    # print("  ㄴ 중복 tablet 수: %s" % len(temp_dup_list))
+    # print("  ㄴ 중복 제거 전: %s" % len(s_tablets))
+    # source TS 에서 추출된 tablet list 에서 중복된 tablet 제거
     if len(temp_dup_list) > 0:
         for dup_cnt in range(len(temp_dup_list)):
-            s_tablets.pop(temp_dup_list[dup_cnt])
-    print("len(s_tablets): %s" % len(s_tablets))
+            # print("  ㄴ 제거 대상 tablet_id: %s" % temp_dup_list[dup_cnt])
+            s_tablets.remove(temp_dup_list[dup_cnt])
+    # print("  ㄴ 중복 제거 후: %s" % len(s_tablets))
     return s_tablets
 
 
@@ -279,7 +270,8 @@ for j in range(len(less_ts['less_summaries'])):
 
 print("move 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
 
-candidate_queue = Queue.Queue()
+candidate_queue = Queue.Queue()  # move 수행 대상 정보
+candidate_list = []  # 중복 제거를 위한 리스트
 while excd_queue.qsize():
     excd = excd_queue.get()
     excd_addr = excd["ts_address"]
@@ -293,7 +285,8 @@ while excd_queue.qsize():
         less = less_queue.get()
         less_addr = less["ts_address"]
         less_cnt = less["result_count"]
-        print("2. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (excd_cnt, less_cnt, excd_addr, less_addr))
+        print("2. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (
+        excd_cnt, less_cnt, excd_addr, less_addr))
         # excd_cnt 가 less_cnt 보다 적은 경우는 excd_cnt 만큼 candidate_queue 에 담은 다음 나머지 TS 수를 다음 excd TS 에 대한
         # tablet 을 담는다. excd_addr 은 변경되고, less_addr 은 유지해야 한다.
         if excd_cnt < abs(less_cnt):
@@ -302,10 +295,12 @@ while excd_queue.qsize():
             excd_tablets = extract_tablets(excd_addr)
             sorted_tablets = sort_tablets(less_addr, excd_tablets)
             if candidate_queue.qsize() > 0:
-                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
+                sorted_tablets = check_duplicate_tablet(candidate_list, sorted_tablets)
             for i in range(excd_cnt):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
+                candidate_list.append({"source_ts": excd_addr, "target_ts": less_addr,
+                                       "tablet_id": sorted_tablets[i]})
             # 나머지 부분 다음 excd_addr 에서 추출해서 담는다.
             print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (excd_cnt, candidate_queue.qsize()))
             less_cnt = less_cnt + excd_cnt
@@ -314,14 +309,16 @@ while excd_queue.qsize():
             excd_cnt = excd["result_count"]
             print(unicode("2-2. 나머지 부분 %s 개를 다음 순서의 excd_addr(%s) 에서 추출해서 담는다." % (abs(less_cnt), excd_addr)))
             print("2-3. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (
-            excd_cnt, less_cnt, excd_addr, less_addr))
+                excd_cnt, less_cnt, excd_addr, less_addr))
             excd_tablets = extract_tablets(excd_addr)
             sorted_tablets = sort_tablets(less_addr, excd_tablets)
             if candidate_queue.qsize() > 0:
-                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
+                sorted_tablets = check_duplicate_tablet(candidate_list, sorted_tablets)
             for i in range(abs(less_cnt)):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
+                candidate_list.append({"source_ts": excd_addr, "target_ts": less_addr,
+                                       "tablet_id": sorted_tablets[i]})
             print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (abs(less_cnt), candidate_queue.qsize()))
             excd_cnt = excd_cnt - abs(less_cnt)
             print("2-4. 나머지 excd_cnt 는 %s 이고, 다음 less_addr 으로 이동" % excd_cnt)
@@ -330,38 +327,42 @@ while excd_queue.qsize():
             excd_tablets = extract_tablets(excd_addr)
             sorted_tablets = sort_tablets(less_addr, excd_tablets)
             if candidate_queue.qsize() > 0:
-                sorted_tablets = check_duplicate_tablet(candidate_queue, sorted_tablets)
+                sorted_tablets = check_duplicate_tablet(candidate_list, sorted_tablets)
             for i in range(abs(less_cnt)):
                 candidate_queue.put({"source_ts": excd_addr, "target_ts": less_addr,
                                      "tablet_id": sorted_tablets[i]})
+                candidate_list.append({"source_ts": excd_addr, "target_ts": less_addr,
+                                       "tablet_id": sorted_tablets[i]})
             print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (abs(less_cnt), candidate_queue.qsize()))
             excd_cnt = excd_cnt - abs(less_cnt)
             print("3. 이동 시킨 후 이동해야 할 수(excd_cnt): %s" % excd_cnt)
+
 while candidate_queue.qsize():
     print(candidate_queue.get())
-# src_extracted_tablets = extract_tablets(sys.argv[1], sys.argv[3], sys.argv[4])
-# trgt_extracted_tablets = extract_tablets(sys.argv[2], sys.argv[3], sys.argv[4])
 
-
-# sorted_tablets = sort_tablets(sys.argv[3], src_extracted_tablets)
-# print("remain tablets after excepted: %s" % len(sorted_tablets))
-
-# 3) 이동 대상 TS 개수 산정
-# move_num_ts = (len(sorted_tablets) - len(trgt_extracted_tablets)) / 2
-
-# 4) pre-execution 인 경우 실행 계획 출력하고 실제 실행은 하지 않음
-# if sys.argv[5] is not None and sys.argv[5] == "true":
-#     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
-#     print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
-#     print("Number of target tablets: %s" % move_num_ts)
-# else:
-#     print("Source Tablet Server: %s, Tablets: %s" % (sys.argv[1], len(sorted_tablets)))
-#     print("Target Tablet Server: %s, Tablets: %s" % (sys.argv[2], len(trgt_extracted_tablets)))
-#     print("Number of target tablets: %s" % move_num_ts)
-#     if move_num_ts <= 0:
-#         print("There is nothing to move...")
-#     else:
-#         print("Execute move_replica...")
-#         moving_tblt_list = move_replica(sorted_tablets, move_num_ts, sys.argv[1], sys.argv[2])
-#         moved_cnt = checking_move_replica(moving_tblt_list)
-#         remove_replica(moving_tblt_list, moved_cnt)
+if candidate_queue.qsize() <= 0:
+    print("There is nothing to move...")
+else:
+    move_cnt = 0
+    moved_list = []
+    moving_tblt_list = []
+    while candidate_queue.qsize():
+        body = candidate_queue.get()
+        source_ts = body['source_ts']
+        target_ts = body['target_ts']
+        tablet_id = body['tablet_id']
+        print("source_ts: %s, target_ts: %s, tablet_id: %s" % (source_ts, target_ts, tablet_id))
+        # moving tablet!!
+        move_replica(tablet_id, source_ts, target_ts)
+        moving_tblt_list.append(tablet_id)
+        moved_list.append({"source_ts": source_ts, "tablet_id": tablet_id})
+        move_cnt = move_cnt + 1
+        print("move_cnt: %s" % move_cnt)
+        if move_cnt == max_moves:
+            # moving 중인 tablet 체크
+            check_cnt = checking_move_replica(moving_tblt_list)
+            # move_replica 완료 후 tablet 삭제
+            remove_replica(moved_list, check_cnt)
+            # moving_tblt_list 초기화
+            moving_tblt_list = []
+            moved_list = []
