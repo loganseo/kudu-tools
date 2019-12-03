@@ -1,0 +1,518 @@
+('arg value = ', './kudu_rebalance_all.py')
+('arg value = ', 'sp-dat-hdp03-mst01,sp-dat-hdp03-mst02,sp-dat-hdp03-mst03')
+('arg value = ', 'cbs.corebanking_log')
+('arg value = ', '20190901')
+('arg value = ', '3')
+('arg value = ', 'true')
+ts_address: sp-dat-hdp03-slv17.kbin.io
+ts_address: sp-dat-hdp03-slv16.kbin.io
+ts_address: sp-dat-hdp03-slv07.kbin.io
+ts_address: sp-dat-hdp03-slv10.kbin.io
+ts_address: sp-dat-hdp03-slv04.kbin.io
+ts_address: sp-dat-hdp03-slv11.kbin.io
+ts_address: sp-dat-hdp03-slv18.kbin.io
+ts_address: sp-dat-hdp03-slv03.kbin.io
+ts_address: sp-dat-hdp03-slv01.kbin.io
+ts_address: sp-dat-hdp03-slv09.kbin.io
+ts_address: sp-dat-hdp03-slv02.kbin.io
+ts_address: sp-dat-hdp03-slv05.kbin.io
+ts_address: sp-dat-hdp03-slv22.kbin.io
+ts_address: sp-dat-hdp03-slv14.kbin.io
+ts_address: sp-dat-hdp03-slv12.kbin.io
+ts_address: sp-dat-hdp03-slv25.kbin.io
+ts_address: sp-dat-hdp03-slv20.kbin.io
+ts_address: sp-dat-hdp03-slv15.kbin.io
+ts_address: sp-dat-hdp03-slv08.kbin.io
+ts_address: sp-dat-hdp03-slv19.kbin.io
+ts_address: sp-dat-hdp03-slv06.kbin.io
+ts_address: sp-dat-hdp03-slv13.kbin.io
+ts_address: sp-dat-hdp03-slv24.kbin.io
+ts_address: sp-dat-hdp03-slv21.kbin.io
+ts_address: sp-dat-hdp03-slv23.kbin.io
+22
+31
+22
+27
+29
+18
+32
+18
+22
+27
+25
+24
+20
+21
+20
+18
+22
+21
+19
+22
+28
+19
+34
+28
+31
+{u'tablet_summaries': [{u'ts_address': u'sp-dat-hdp03-slv17.kbin.io', u'tablet_count': 22}, {u'ts_address': u'sp-dat-hdp03-slv16.kbin.io', u'tablet_count': 31}, {u'ts_address': u'sp-dat-hdp03-slv07.kbin.io', u'tablet_count': 22}, {u'ts_address': u'sp-dat-hdp03-slv10.kbin.io', u'tablet_count': 27}, {u'ts_address': u'sp-dat-hdp03-slv04.kbin.io', u'tablet_count': 29}, {u'ts_address': u'sp-dat-hdp03-slv11.kbin.io', u'tablet_count': 18}, {u'ts_address': u'sp-dat-hdp03-slv18.kbin.io', u'tablet_count': 32}, {u'ts_address': u'sp-dat-hdp03-slv03.kbin.io', u'tablet_count': 18}, {u'ts_address': u'sp-dat-hdp03-slv01.kbin.io', u'tablet_count': 22}, {u'ts_address': u'sp-dat-hdp03-slv09.kbin.io', u'tablet_count': 27}, {u'ts_address': u'sp-dat-hdp03-slv02.kbin.io', u'tablet_count': 25}, {u'ts_address': u'sp-dat-hdp03-slv05.kbin.io', u'tablet_count': 24}, {u'ts_address': u'sp-dat-hdp03-slv22.kbin.io', u'tablet_count': 20}, {u'ts_address': u'sp-dat-hdp03-slv14.kbin.io', u'tablet_count': 21}, {u'ts_address': u'sp-dat-hdp03-slv12.kbin.io', u'tablet_count': 20}, {u'ts_address': u'sp-dat-hdp03-slv25.kbin.io', u'tablet_count': 18}, {u'ts_address': u'sp-dat-hdp03-slv20.kbin.io', u'tablet_count': 22}, {u'ts_address': u'sp-dat-hdp03-slv15.kbin.io', u'tablet_count': 21}, {u'ts_address': u'sp-dat-hdp03-slv08.kbin.io', u'tablet_count': 19}, {u'ts_address': u'sp-dat-hdp03-slv19.kbin.io', u'tablet_count': 22}, {u'ts_address': u'sp-dat-hdp03-slv06.kbin.io', u'tablet_count': 28}, {u'ts_address': u'sp-dat-hdp03-slv13.kbin.io', u'tablet_count': 19}, {u'ts_address': u'sp-dat-hdp03-slv24.kbin.io', u'tablet_count': 34}, {u'ts_address': u'sp-dat-hdp03-slv21.kbin.io', u'tablet_count': 28}, {u'ts_address': u'sp-dat-hdp03-slv23.kbin.io', u'tablet_count': 31}], u'expected_count': 24, u'total_count': 600}
+{
+    "exceeded_summaries": [
+        {
+            "ts_address": "sp-dat-hdp03-slv24.kbin.io", 
+            "tablet_count": 34, 
+            "result_count": 10
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv18.kbin.io", 
+            "tablet_count": 32, 
+            "result_count": 8
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv16.kbin.io", 
+            "tablet_count": 31, 
+            "result_count": 7
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv23.kbin.io", 
+            "tablet_count": 31, 
+            "result_count": 7
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv04.kbin.io", 
+            "tablet_count": 29, 
+            "result_count": 5
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv06.kbin.io", 
+            "tablet_count": 28, 
+            "result_count": 4
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv21.kbin.io", 
+            "tablet_count": 28, 
+            "result_count": 4
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv10.kbin.io", 
+            "tablet_count": 27, 
+            "result_count": 3
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv09.kbin.io", 
+            "tablet_count": 27, 
+            "result_count": 3
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv02.kbin.io", 
+            "tablet_count": 25, 
+            "result_count": 1
+        }
+    ]
+}
+{
+    "less_summaries": [
+        {
+            "ts_address": "sp-dat-hdp03-slv11.kbin.io", 
+            "tablet_count": 18, 
+            "result_count": -6
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv03.kbin.io", 
+            "tablet_count": 18, 
+            "result_count": -6
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv25.kbin.io", 
+            "tablet_count": 18, 
+            "result_count": -6
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv08.kbin.io", 
+            "tablet_count": 19, 
+            "result_count": -5
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv13.kbin.io", 
+            "tablet_count": 19, 
+            "result_count": -5
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv22.kbin.io", 
+            "tablet_count": 20, 
+            "result_count": -4
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv12.kbin.io", 
+            "tablet_count": 20, 
+            "result_count": -4
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv14.kbin.io", 
+            "tablet_count": 21, 
+            "result_count": -3
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv15.kbin.io", 
+            "tablet_count": 21, 
+            "result_count": -3
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv17.kbin.io", 
+            "tablet_count": 22, 
+            "result_count": -2
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv07.kbin.io", 
+            "tablet_count": 22, 
+            "result_count": -2
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv01.kbin.io", 
+            "tablet_count": 22, 
+            "result_count": -2
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv20.kbin.io", 
+            "tablet_count": 22, 
+            "result_count": -2
+        }, 
+        {
+            "ts_address": "sp-dat-hdp03-slv19.kbin.io", 
+            "tablet_count": 22, 
+            "result_count": -2
+        }
+    ]
+}
+move 대상 tablet 수: 52 / 받아야 할 tablet 수: -52
+
+1. source TS: sp-dat-hdp03-slv24.kbin.io, 이동해야 할 수(excd_cnt): 10
+2. 이동해야 할 수(excd_cnt): 10, 이동 시킬 수 있는 수(less_cnt): -6 (sp-dat-hdp03-slv24.kbin.io -> sp-dat-hdp03-slv11.kbin.io)
+    6 개 후보 담기 시도, 현재 candidate_queue 사이즈: 6
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 4
+2. 이동해야 할 수(excd_cnt): 4, 이동 시킬 수 있는 수(less_cnt): -6 (sp-dat-hdp03-slv24.kbin.io -> sp-dat-hdp03-slv03.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 4 만큼 현재 excd_addr(sp-dat-hdp03-slv24.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 중복 tablet_id: 459c03a55a9b4876870d2dfe930373c3
+  ㄴ 중복 tablet_id: 49b7d392a1e342a0907a1ce78cc7207b
+  ㄴ 중복 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 중복 tablet_id: 579d936a52ab4d89842e70146fcc5e46
+  ㄴ 중복 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 tablet 수: 6
+  ㄴ 중복 제거 전: 33
+  ㄴ 제거 대상 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 제거 대상 tablet_id: 459c03a55a9b4876870d2dfe930373c3
+  ㄴ 제거 대상 tablet_id: 49b7d392a1e342a0907a1ce78cc7207b
+  ㄴ 제거 대상 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 제거 대상 tablet_id: 579d936a52ab4d89842e70146fcc5e46
+  ㄴ 제거 대상 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 제거 후: 27
+    4 개 후보 담기 시도, 현재 candidate_queue 사이즈: 10
+2-2. 나머지 부분 2 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv18.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 8, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv18.kbin.io -> sp-dat-hdp03-slv03.kbin.io)
+  ㄴ 중복 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 tablet 수: 1
+  ㄴ 중복 제거 전: 29
+  ㄴ 제거 대상 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 제거 후: 28
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 12
+2-4. 나머지 excd_cnt 는 6 이고, 다음 less_addr 으로 이동
+2. 이동해야 할 수(excd_cnt): 6, 이동 시킬 수 있는 수(less_cnt): -6 (sp-dat-hdp03-slv18.kbin.io -> sp-dat-hdp03-slv25.kbin.io)
+  ㄴ 중복 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 중복 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 중복 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 tablet 수: 3
+  ㄴ 중복 제거 전: 28
+  ㄴ 제거 대상 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 제거 대상 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 제거 대상 tablet_id: 59a882204e854c50a4a88103da888f42
+  ㄴ 중복 제거 후: 25
+    6 개 후보 담기 시도, 현재 candidate_queue 사이즈: 18
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 0
+excd_cnt == 0
+
+1. source TS: sp-dat-hdp03-slv16.kbin.io, 이동해야 할 수(excd_cnt): 7
+2. 이동해야 할 수(excd_cnt): 7, 이동 시킬 수 있는 수(less_cnt): -5 (sp-dat-hdp03-slv16.kbin.io -> sp-dat-hdp03-slv08.kbin.io)
+  ㄴ 중복 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 중복 tablet_id: 3587896225ed4981ad96a21ae43d4102
+  ㄴ 중복 tablet_id: 690013c7a64a4a3a9091d0b4a57e0040
+  ㄴ 중복 tablet 수: 3
+  ㄴ 중복 제거 전: 29
+  ㄴ 제거 대상 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 제거 대상 tablet_id: 3587896225ed4981ad96a21ae43d4102
+  ㄴ 제거 대상 tablet_id: 690013c7a64a4a3a9091d0b4a57e0040
+  ㄴ 중복 제거 후: 26
+    5 개 후보 담기 시도, 현재 candidate_queue 사이즈: 23
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 2
+2. 이동해야 할 수(excd_cnt): 2, 이동 시킬 수 있는 수(less_cnt): -5 (sp-dat-hdp03-slv16.kbin.io -> sp-dat-hdp03-slv13.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 2 만큼 현재 excd_addr(sp-dat-hdp03-slv16.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 중복 tablet_id: 007546fe382a4197950902565b6a233b
+  ㄴ 중복 tablet_id: 09f90b1981e840ec924f371c3442b4b0
+  ㄴ 중복 tablet_id: 15e537b9e5634d718f1262b6c03ce28e
+  ㄴ 중복 tablet_id: 3587896225ed4981ad96a21ae43d4102
+  ㄴ 중복 tablet_id: 690013c7a64a4a3a9091d0b4a57e0040
+  ㄴ 중복 tablet 수: 6
+  ㄴ 중복 제거 전: 28
+  ㄴ 제거 대상 tablet_id: 003135ec0c2640c29585e27aae34838a
+  ㄴ 제거 대상 tablet_id: 007546fe382a4197950902565b6a233b
+  ㄴ 제거 대상 tablet_id: 09f90b1981e840ec924f371c3442b4b0
+  ㄴ 제거 대상 tablet_id: 15e537b9e5634d718f1262b6c03ce28e
+  ㄴ 제거 대상 tablet_id: 3587896225ed4981ad96a21ae43d4102
+  ㄴ 제거 대상 tablet_id: 690013c7a64a4a3a9091d0b4a57e0040
+  ㄴ 중복 제거 후: 22
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 25
+2-2. 나머지 부분 3 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv23.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 7, 이동 시킬 수 있는 수(less_cnt): -3 (sp-dat-hdp03-slv23.kbin.io -> sp-dat-hdp03-slv13.kbin.io)
+  ㄴ 중복 tablet 수: 0
+  ㄴ 중복 제거 전: 26
+  ㄴ 중복 제거 후: 26
+    3 개 후보 담기 시도, 현재 candidate_queue 사이즈: 28
+2-4. 나머지 excd_cnt 는 4 이고, 다음 less_addr 으로 이동
+2. 이동해야 할 수(excd_cnt): 4, 이동 시킬 수 있는 수(less_cnt): -4 (sp-dat-hdp03-slv23.kbin.io -> sp-dat-hdp03-slv22.kbin.io)
+  ㄴ 중복 tablet_id: 47aa6a0c14cb412898dbc3680d25cb02
+  ㄴ 중복 tablet_id: 49e8a2a57fe54d2aa8529b333d1bbbe0
+  ㄴ 중복 tablet_id: 4a54fc57a2244a4c91b7cd93d7815af3
+  ㄴ 중복 tablet 수: 3
+  ㄴ 중복 제거 전: 31
+  ㄴ 제거 대상 tablet_id: 47aa6a0c14cb412898dbc3680d25cb02
+  ㄴ 제거 대상 tablet_id: 49e8a2a57fe54d2aa8529b333d1bbbe0
+  ㄴ 제거 대상 tablet_id: 4a54fc57a2244a4c91b7cd93d7815af3
+  ㄴ 중복 제거 후: 28
+    4 개 후보 담기 시도, 현재 candidate_queue 사이즈: 32
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 0
+excd_cnt == 0
+
+1. source TS: sp-dat-hdp03-slv04.kbin.io, 이동해야 할 수(excd_cnt): 5
+2. 이동해야 할 수(excd_cnt): 5, 이동 시킬 수 있는 수(less_cnt): -4 (sp-dat-hdp03-slv04.kbin.io -> sp-dat-hdp03-slv12.kbin.io)
+  ㄴ 중복 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 중복 tablet_id: 1b29c79cc2b443c69539b50eab68c3b8
+  ㄴ 중복 tablet_id: 1caaf8fbca7244728dd241278cafe45c
+  ㄴ 중복 tablet_id: 6cfc8d9dbae144fd9b18a5f1cebf1e28
+  ㄴ 중복 tablet 수: 4
+  ㄴ 중복 제거 전: 27
+  ㄴ 제거 대상 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 제거 대상 tablet_id: 1b29c79cc2b443c69539b50eab68c3b8
+  ㄴ 제거 대상 tablet_id: 1caaf8fbca7244728dd241278cafe45c
+  ㄴ 제거 대상 tablet_id: 6cfc8d9dbae144fd9b18a5f1cebf1e28
+  ㄴ 중복 제거 후: 23
+    4 개 후보 담기 시도, 현재 candidate_queue 사이즈: 36
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 1
+2. 이동해야 할 수(excd_cnt): 1, 이동 시킬 수 있는 수(less_cnt): -3 (sp-dat-hdp03-slv04.kbin.io -> sp-dat-hdp03-slv14.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 1 만큼 현재 excd_addr(sp-dat-hdp03-slv04.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 중복 tablet_id: 1a9f07b74619414fa8183ce11fbca42c
+  ㄴ 중복 tablet_id: 1b29c79cc2b443c69539b50eab68c3b8
+  ㄴ 중복 tablet_id: 1c7f7d58b8a34bfaae8e5795c1c478cf
+  ㄴ 중복 tablet_id: 1caaf8fbca7244728dd241278cafe45c
+  ㄴ 중복 tablet_id: 209394eda279446991061e60e8289230
+  ㄴ 중복 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 중복 tablet_id: 6cfc8d9dbae144fd9b18a5f1cebf1e28
+  ㄴ 중복 tablet 수: 8
+  ㄴ 중복 제거 전: 29
+  ㄴ 제거 대상 tablet_id: 0455f2b86be243fc9fec68207cd00eb8
+  ㄴ 제거 대상 tablet_id: 1a9f07b74619414fa8183ce11fbca42c
+  ㄴ 제거 대상 tablet_id: 1b29c79cc2b443c69539b50eab68c3b8
+  ㄴ 제거 대상 tablet_id: 1c7f7d58b8a34bfaae8e5795c1c478cf
+  ㄴ 제거 대상 tablet_id: 1caaf8fbca7244728dd241278cafe45c
+  ㄴ 제거 대상 tablet_id: 209394eda279446991061e60e8289230
+  ㄴ 제거 대상 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 제거 대상 tablet_id: 6cfc8d9dbae144fd9b18a5f1cebf1e28
+  ㄴ 중복 제거 후: 21
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 37
+2-2. 나머지 부분 2 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv06.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 4, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv06.kbin.io -> sp-dat-hdp03-slv14.kbin.io)
+  ㄴ 중복 tablet_id: 1b90ecc44637417ab3c85b137cea72ce
+  ㄴ 중복 tablet_id: 25154131de5344438d28935866f38786
+  ㄴ 중복 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 중복 tablet_id: 67b7659109db4a03be07a08a677195d8
+  ㄴ 중복 tablet 수: 4
+  ㄴ 중복 제거 전: 28
+  ㄴ 제거 대상 tablet_id: 1b90ecc44637417ab3c85b137cea72ce
+  ㄴ 제거 대상 tablet_id: 25154131de5344438d28935866f38786
+  ㄴ 제거 대상 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 제거 대상 tablet_id: 67b7659109db4a03be07a08a677195d8
+  ㄴ 중복 제거 후: 24
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 39
+2-4. 나머지 excd_cnt 는 2 이고, 다음 less_addr 으로 이동
+2. 이동해야 할 수(excd_cnt): 2, 이동 시킬 수 있는 수(less_cnt): -3 (sp-dat-hdp03-slv06.kbin.io -> sp-dat-hdp03-slv15.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 2 만큼 현재 excd_addr(sp-dat-hdp03-slv06.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 0e7d213807e944e6a37b3667124c1d0c
+  ㄴ 중복 tablet_id: 1908d4f21b3d4530a97a643156484ed8
+  ㄴ 중복 tablet_id: 25154131de5344438d28935866f38786
+  ㄴ 중복 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 중복 tablet_id: 67b7659109db4a03be07a08a677195d8
+  ㄴ 중복 tablet 수: 5
+  ㄴ 중복 제거 전: 25
+  ㄴ 제거 대상 tablet_id: 0e7d213807e944e6a37b3667124c1d0c
+  ㄴ 제거 대상 tablet_id: 1908d4f21b3d4530a97a643156484ed8
+  ㄴ 제거 대상 tablet_id: 25154131de5344438d28935866f38786
+  ㄴ 제거 대상 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 제거 대상 tablet_id: 67b7659109db4a03be07a08a677195d8
+  ㄴ 중복 제거 후: 20
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 41
+2-2. 나머지 부분 1 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv21.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 4, 이동 시킬 수 있는 수(less_cnt): -1 (sp-dat-hdp03-slv21.kbin.io -> sp-dat-hdp03-slv15.kbin.io)
+  ㄴ 중복 tablet 수: 0
+  ㄴ 중복 제거 전: 23
+  ㄴ 중복 제거 후: 23
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 42
+2-4. 나머지 excd_cnt 는 3 이고, 다음 less_addr 으로 이동
+2. 이동해야 할 수(excd_cnt): 3, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv21.kbin.io -> sp-dat-hdp03-slv17.kbin.io)
+  ㄴ 중복 tablet_id: 5f34b24ba45943099d9241d9de7e18f2
+  ㄴ 중복 tablet 수: 1
+  ㄴ 중복 제거 전: 27
+  ㄴ 제거 대상 tablet_id: 5f34b24ba45943099d9241d9de7e18f2
+  ㄴ 중복 제거 후: 26
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 44
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 1
+2. 이동해야 할 수(excd_cnt): 1, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv21.kbin.io -> sp-dat-hdp03-slv07.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 1 만큼 현재 excd_addr(sp-dat-hdp03-slv21.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 5f34b24ba45943099d9241d9de7e18f2
+  ㄴ 중복 tablet_id: 7b899762f6414fd6bc7bb7c5e1e6a836
+  ㄴ 중복 tablet_id: 7c0220cd70e34c11a9a0382df3833ec6
+  ㄴ 중복 tablet 수: 3
+  ㄴ 중복 제거 전: 25
+  ㄴ 제거 대상 tablet_id: 5f34b24ba45943099d9241d9de7e18f2
+  ㄴ 제거 대상 tablet_id: 7b899762f6414fd6bc7bb7c5e1e6a836
+  ㄴ 제거 대상 tablet_id: 7c0220cd70e34c11a9a0382df3833ec6
+  ㄴ 중복 제거 후: 22
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 45
+2-2. 나머지 부분 1 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv10.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 3, 이동 시킬 수 있는 수(less_cnt): -1 (sp-dat-hdp03-slv10.kbin.io -> sp-dat-hdp03-slv07.kbin.io)
+  ㄴ 중복 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 중복 tablet_id: 204db61be9344c68a22a930652c23ad7
+  ㄴ 중복 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 중복 tablet_id: 3eb34d26ef164523b2bfa4fddb29424b
+  ㄴ 중복 tablet_id: 52b04754d7054bcf9a61169e6aa3fc8e
+  ㄴ 중복 tablet 수: 5
+  ㄴ 중복 제거 전: 23
+  ㄴ 제거 대상 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 제거 대상 tablet_id: 204db61be9344c68a22a930652c23ad7
+  ㄴ 제거 대상 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 제거 대상 tablet_id: 3eb34d26ef164523b2bfa4fddb29424b
+  ㄴ 제거 대상 tablet_id: 52b04754d7054bcf9a61169e6aa3fc8e
+  ㄴ 중복 제거 후: 18
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 46
+2-4. 나머지 excd_cnt 는 2 이고, 다음 less_addr 으로 이동
+2. 이동해야 할 수(excd_cnt): 2, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv10.kbin.io -> sp-dat-hdp03-slv01.kbin.io)
+  ㄴ 중복 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 중복 tablet_id: 204db61be9344c68a22a930652c23ad7
+  ㄴ 중복 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 중복 tablet_id: 3eb34d26ef164523b2bfa4fddb29424b
+  ㄴ 중복 tablet_id: 49b7d392a1e342a0907a1ce78cc7207b
+  ㄴ 중복 tablet_id: 52b04754d7054bcf9a61169e6aa3fc8e
+  ㄴ 중복 tablet 수: 6
+  ㄴ 중복 제거 전: 23
+  ㄴ 제거 대상 tablet_id: 0488e1a5af5d4133992788a5ef419cbe
+  ㄴ 제거 대상 tablet_id: 204db61be9344c68a22a930652c23ad7
+  ㄴ 제거 대상 tablet_id: 249c423da65e48f68de332f43ea1a9da
+  ㄴ 제거 대상 tablet_id: 3eb34d26ef164523b2bfa4fddb29424b
+  ㄴ 제거 대상 tablet_id: 49b7d392a1e342a0907a1ce78cc7207b
+  ㄴ 제거 대상 tablet_id: 52b04754d7054bcf9a61169e6aa3fc8e
+  ㄴ 중복 제거 후: 17
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 48
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 0
+excd_cnt == 0
+
+1. source TS: sp-dat-hdp03-slv09.kbin.io, 이동해야 할 수(excd_cnt): 3
+2. 이동해야 할 수(excd_cnt): 3, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv09.kbin.io -> sp-dat-hdp03-slv20.kbin.io)
+  ㄴ 중복 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 중복 tablet_id: 683986d77c6d49d6b2ceaabdef265af1
+  ㄴ 중복 tablet 수: 2
+  ㄴ 중복 제거 전: 24
+  ㄴ 제거 대상 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 제거 대상 tablet_id: 683986d77c6d49d6b2ceaabdef265af1
+  ㄴ 중복 제거 후: 22
+    2 개 후보 담기 시도, 현재 candidate_queue 사이즈: 50
+3. 이동 시킨 후 이동해야 할 수(excd_cnt): 1
+2. 이동해야 할 수(excd_cnt): 1, 이동 시킬 수 있는 수(less_cnt): -2 (sp-dat-hdp03-slv09.kbin.io -> sp-dat-hdp03-slv19.kbin.io)
+excd_cnt < abs(less_cnt)
+2-1. 1 만큼 현재 excd_addr(sp-dat-hdp03-slv09.kbin.io) 에서 candidate_queue 에 후보 담는다.
+  ㄴ 중복 tablet_id: 07c88177f22d441ea6d3f92f3be9f782
+  ㄴ 중복 tablet_id: 09dfe5fadf254ef09f0e8b3aaa7d4326
+  ㄴ 중복 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 중복 tablet_id: 683986d77c6d49d6b2ceaabdef265af1
+  ㄴ 중복 tablet 수: 4
+  ㄴ 중복 제거 전: 27
+  ㄴ 제거 대상 tablet_id: 07c88177f22d441ea6d3f92f3be9f782
+  ㄴ 제거 대상 tablet_id: 09dfe5fadf254ef09f0e8b3aaa7d4326
+  ㄴ 제거 대상 tablet_id: 571039def65845038dc366b5a094d2e8
+  ㄴ 제거 대상 tablet_id: 683986d77c6d49d6b2ceaabdef265af1
+  ㄴ 중복 제거 후: 23
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 51
+2-2. 나머지 부분 1 개를 다음 순서의 excd_addr(sp-dat-hdp03-slv02.kbin.io) 에서 추출해서 담는다.
+2-3. 이동해야 할 수(excd_cnt): 1, 이동 시킬 수 있는 수(less_cnt): -1 (sp-dat-hdp03-slv02.kbin.io -> sp-dat-hdp03-slv19.kbin.io)
+  ㄴ 중복 tablet_id: 209394eda279446991061e60e8289230
+  ㄴ 중복 tablet_id: 459c03a55a9b4876870d2dfe930373c3
+  ㄴ 중복 tablet_id: 49e8a2a57fe54d2aa8529b333d1bbbe0
+  ㄴ 중복 tablet_id: 4a54fc57a2244a4c91b7cd93d7815af3
+  ㄴ 중복 tablet_id: 69f08f7d7fb4442093538ce128d68edb
+  ㄴ 중복 tablet_id: 816514cb5c1a41908e1e81d29ecff280
+  ㄴ 중복 tablet 수: 6
+  ㄴ 중복 제거 전: 25
+  ㄴ 제거 대상 tablet_id: 209394eda279446991061e60e8289230
+  ㄴ 제거 대상 tablet_id: 459c03a55a9b4876870d2dfe930373c3
+  ㄴ 제거 대상 tablet_id: 49e8a2a57fe54d2aa8529b333d1bbbe0
+  ㄴ 제거 대상 tablet_id: 4a54fc57a2244a4c91b7cd93d7815af3
+  ㄴ 제거 대상 tablet_id: 69f08f7d7fb4442093538ce128d68edb
+  ㄴ 제거 대상 tablet_id: 816514cb5c1a41908e1e81d29ecff280
+  ㄴ 중복 제거 후: 19
+    1 개 후보 담기 시도, 현재 candidate_queue 사이즈: 52
+2-4. 나머지 excd_cnt 는 0 이고, 다음 less_addr 으로 이동
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '0455f2b86be243fc9fec68207cd00eb8', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '459c03a55a9b4876870d2dfe930373c3', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '49b7d392a1e342a0907a1ce78cc7207b', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '571039def65845038dc366b5a094d2e8', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '579d936a52ab4d89842e70146fcc5e46', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv11.kbin.io', 'tablet_id': '59a882204e854c50a4a88103da888f42', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '4d61bddee18542809542a1019ebced80', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '67b7659109db4a03be07a08a677195d8', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '690013c7a64a4a3a9091d0b4a57e0040', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '6cfc8d9dbae144fd9b18a5f1cebf1e28', 'source_ts': u'sp-dat-hdp03-slv24.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '003135ec0c2640c29585e27aae34838a', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv03.kbin.io', 'tablet_id': '0488e1a5af5d4133992788a5ef419cbe', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '1a04338a905c46a2bd99be74d754e65e', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '1b29c79cc2b443c69539b50eab68c3b8', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '1b90ecc44637417ab3c85b137cea72ce', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '1caaf8fbca7244728dd241278cafe45c', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '3587896225ed4981ad96a21ae43d4102', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv25.kbin.io', 'tablet_id': '3eb34d26ef164523b2bfa4fddb29424b', 'source_ts': u'sp-dat-hdp03-slv18.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv08.kbin.io', 'tablet_id': '0069f65227844153a3dcdf12a309e8d4', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv08.kbin.io', 'tablet_id': '007546fe382a4197950902565b6a233b', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv08.kbin.io', 'tablet_id': '05ef7cecde8348c3827d44e0526a9dda', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv08.kbin.io', 'tablet_id': '09f90b1981e840ec924f371c3442b4b0', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv08.kbin.io', 'tablet_id': '15e537b9e5634d718f1262b6c03ce28e', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv13.kbin.io', 'tablet_id': '07af4552ee8c4e40bf58f4d358e22f06', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv13.kbin.io', 'tablet_id': '204db61be9344c68a22a930652c23ad7', 'source_ts': u'sp-dat-hdp03-slv16.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv13.kbin.io', 'tablet_id': '47aa6a0c14cb412898dbc3680d25cb02', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv13.kbin.io', 'tablet_id': '49e8a2a57fe54d2aa8529b333d1bbbe0', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv13.kbin.io', 'tablet_id': '4a54fc57a2244a4c91b7cd93d7815af3', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv22.kbin.io', 'tablet_id': '52b04754d7054bcf9a61169e6aa3fc8e', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv22.kbin.io', 'tablet_id': '6748ddbe347443f18ccb51940880c0b5', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv22.kbin.io', 'tablet_id': '683986d77c6d49d6b2ceaabdef265af1', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv22.kbin.io', 'tablet_id': '69f08f7d7fb4442093538ce128d68edb', 'source_ts': u'sp-dat-hdp03-slv23.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv12.kbin.io', 'tablet_id': '1a9f07b74619414fa8183ce11fbca42c', 'source_ts': u'sp-dat-hdp03-slv04.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv12.kbin.io', 'tablet_id': '1c7f7d58b8a34bfaae8e5795c1c478cf', 'source_ts': u'sp-dat-hdp03-slv04.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv12.kbin.io', 'tablet_id': '209394eda279446991061e60e8289230', 'source_ts': u'sp-dat-hdp03-slv04.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv12.kbin.io', 'tablet_id': '249c423da65e48f68de332f43ea1a9da', 'source_ts': u'sp-dat-hdp03-slv04.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv14.kbin.io', 'tablet_id': '25154131de5344438d28935866f38786', 'source_ts': u'sp-dat-hdp03-slv04.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv14.kbin.io', 'tablet_id': '0e7d213807e944e6a37b3667124c1d0c', 'source_ts': u'sp-dat-hdp03-slv06.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv14.kbin.io', 'tablet_id': '1908d4f21b3d4530a97a643156484ed8', 'source_ts': u'sp-dat-hdp03-slv06.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv15.kbin.io', 'tablet_id': '26ea035a1b494565b66e0ff322cb372e', 'source_ts': u'sp-dat-hdp03-slv06.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv15.kbin.io', 'tablet_id': '374ebb619b5341d8bfd8efb5bd22698b', 'source_ts': u'sp-dat-hdp03-slv06.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv15.kbin.io', 'tablet_id': '5f34b24ba45943099d9241d9de7e18f2', 'source_ts': u'sp-dat-hdp03-slv21.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv17.kbin.io', 'tablet_id': '7b899762f6414fd6bc7bb7c5e1e6a836', 'source_ts': u'sp-dat-hdp03-slv21.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv17.kbin.io', 'tablet_id': '7c0220cd70e34c11a9a0382df3833ec6', 'source_ts': u'sp-dat-hdp03-slv21.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv07.kbin.io', 'tablet_id': '816514cb5c1a41908e1e81d29ecff280', 'source_ts': u'sp-dat-hdp03-slv21.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv07.kbin.io', 'tablet_id': '04cef249aa5f465ea9c8f2b413a3fde7', 'source_ts': u'sp-dat-hdp03-slv10.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv01.kbin.io', 'tablet_id': '2e77ecba65d048798d611daa7084337f', 'source_ts': u'sp-dat-hdp03-slv10.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv01.kbin.io', 'tablet_id': '406ff1be0633437c97466b79aeb19c33', 'source_ts': u'sp-dat-hdp03-slv10.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv20.kbin.io', 'tablet_id': '07c88177f22d441ea6d3f92f3be9f782', 'source_ts': u'sp-dat-hdp03-slv09.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv20.kbin.io', 'tablet_id': '09dfe5fadf254ef09f0e8b3aaa7d4326', 'source_ts': u'sp-dat-hdp03-slv09.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv19.kbin.io', 'tablet_id': '2747c788ca484e9598dfa4a74d4317e5', 'source_ts': u'sp-dat-hdp03-slv09.kbin.io'}
+{'target_ts': u'sp-dat-hdp03-slv19.kbin.io', 'tablet_id': '05858f68869946a69c4c039f65254d44', 'source_ts': u'sp-dat-hdp03-slv02.kbin.io'}
