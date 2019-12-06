@@ -165,12 +165,12 @@ def remove_replica(moved_list, moved_count):
                 subprocess.call(cmd_leader_step_down, shell=True)
                 time.sleep(5)
                 remove_result = subprocess.call(cmd_remove, shell=True)
-                print("the result of remove job: %s" % remove_result)
-                print("removed tablet")
             else:
                 remove_result = subprocess.call(cmd_remove, shell=True)
-                print("the result of remove job: %s" % remove_result)
+            if int(remove_result) == 0:
                 print("removed tablet")
+            else:
+                raise ValueError("Please check the tablets. Some Tablets can't be removed.")
 
 
 # Tablet Server List 추출
