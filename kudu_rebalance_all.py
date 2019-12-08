@@ -35,7 +35,7 @@ for arg in sys.argv:
 # Source TS Web UI 에서 Tablet 리스트 추출
 def extract_tablets(src_ts):
     cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + table_name + '" -A2 ' \
-                                                                                       '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
+               '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -190,14 +190,14 @@ def extract_dist_status():
     for i in range(len(output_tserver['tserver_summaries'])):
         address = output_tserver['tserver_summaries'][i]['address']
         ts_address = re.sub(':7050', '', string=address)
-        print("ts_address: %s" % ts_address)
+        # print("ts_address: %s" % ts_address)
         tserver_list.append(ts_address)
     tablet_dist_status = OrderedDict()
     tablet_dist_status["tablet_summaries"] = []
     total_count = 0
     for ts in tserver_list:
         extracted_tablets = extract_tablets(ts)
-        print("%s" % len(extracted_tablets))
+        # print("%s" % len(extracted_tablets))
         total_count = total_count + len(extracted_tablets)
         tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": len(extracted_tablets)})
     tablet_dist_status["total_count"] = total_count
@@ -214,23 +214,18 @@ def check_duplicate_tablet(c_list, s_tablets):
     for list_num in range(len(s_tablets)):
         for c_num in range(len(c_list)):
             if s_tablets[list_num] == c_list[c_num]['tablet_id']:
-                # print("  ㄴ 중복 tablet_id: %s" % s_tablets[list_num])
                 temp_dup_list.append(s_tablets[list_num])
-    # print("  ㄴ 중복 tablet 수: %s" % len(temp_dup_list))
-    # print("  ㄴ 중복 제거 전: %s" % len(s_tablets))
     # source TS 에서 추출된 tablet list 에서 중복된 tablet 제거
     if len(temp_dup_list) > 0:
         for dup_cnt in range(len(temp_dup_list)):
-            # print("  ㄴ 제거 대상 tablet_id: %s" % temp_dup_list[dup_cnt])
             s_tablets.remove(temp_dup_list[dup_cnt])
-    # print("  ㄴ 중복 제거 후: %s" % len(s_tablets))
     return s_tablets
 
 
 # Starting Kudu Rebalancing Job
 json_tablet_status = extract_dist_status()
 json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
-print(json_tablet_status)
+# print(json_tablet_status)
 
 # 적정수 - 보유수 = +인 TServer 와 -인 TServer 분리해서 리스트 저장
 exceeded_ts = OrderedDict()
@@ -337,9 +332,6 @@ while excd_queue.qsize():
             print("    %s 개 후보 담기 시도, 현재 candidate_queue 사이즈: %s" % (abs(less_cnt), candidate_queue.qsize()))
             excd_cnt = excd_cnt - abs(less_cnt)
             print("3. 이동 시킨 후 이동해야 할 수(excd_cnt): %s" % excd_cnt)
-
-# while candidate_queue.qsize():
-#     print(candidate_queue.get())
 
 if candidate_queue.qsize() <= 0:
     print("There is nothing to move...")
