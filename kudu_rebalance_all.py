@@ -35,7 +35,7 @@ for arg in sys.argv:
 # Source TS Web UI 에서 Tablet 리스트 추출
 def extract_tablets(src_ts):
     cmd_extr = 'curl -s http://' + src_ts + ':8050/tablets | grep -w "' + table_name + '" -A2 ' \
-               '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
+                '| grep "PARTITION &quot;' + target_partition + '&quot;" -B1 | grep -o id=.*'
     tablets = subprocess.Popen(cmd_extr
                                , stdout=subprocess.PIPE
                                , shell=True).stdout
@@ -196,10 +196,15 @@ def extract_dist_status():
     tablet_dist_status["tablet_summaries"] = []
     total_count = 0
     for ts in tserver_list:
+        extracted_tablets_count = 0
         extracted_tablets = extract_tablets(ts)
-        # print("%s" % len(extracted_tablets))
-        total_count = total_count + len(extracted_tablets)
-        tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": len(extracted_tablets)})
+        if extracted_tablets[0] == "":
+            extracted_tablets_count = 0
+        else:
+            extracted_tablets_count = len(extracted_tablets)
+        # print("%s %s" % (ts, extracted_tablets_count))
+        total_count = total_count + extracted_tablets_count
+        tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": extracted_tablets_count})
     tablet_dist_status["total_count"] = total_count
     # Tablet Server 당 적절한 Tablet 수
     tablet_dist_status["expected_count"] = total_count / len(tserver_list)
@@ -222,7 +227,9 @@ def check_duplicate_tablet(c_list, s_tablets):
     return s_tablets
 
 
-# Starting Kudu Rebalancing Job
+#################################
+# Starting Kudu Rebalancing Job #
+#################################
 json_tablet_status = extract_dist_status()
 json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
 # print(json_tablet_status)
@@ -281,7 +288,7 @@ while excd_queue.qsize():
         less = less_queue.get()
         less_addr = less["ts_address"]
         less_cnt = less["result_count"]
-        print("2. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (
+        print("2. 이동해야 할 수(excd_cnt): %s, 받아야 하는 수(less_cnt): %s (%s -> %s)" % (
             excd_cnt, less_cnt, excd_addr, less_addr))
         # excd_cnt 가 less_cnt 보다 적은 경우는 excd_cnt 만큼 candidate_queue 에 담은 다음 나머지 TS 수를 다음 excd TS 에 대한
         # tablet 을 담는다. excd_addr 은 변경되고, less_addr 은 유지해야 한다.
@@ -304,7 +311,7 @@ while excd_queue.qsize():
             excd_addr = excd["ts_address"]
             excd_cnt = excd["result_count"]
             print(unicode("\n2-2. 나머지 부분 %s 개를 다음 순서의 excd_addr(%s) 에서 추출해서 담는다." % (abs(less_cnt), excd_addr)))
-            print("2-3. 이동해야 할 수(excd_cnt): %s, 이동 시킬 수 있는 수(less_cnt): %s (%s -> %s)" % (
+            print("2-3. 이동해야 할 수(excd_cnt): %s, 받아야 하는 수(less_cnt): %s (%s -> %s)" % (
                 excd_cnt, less_cnt, excd_addr, less_addr))
             excd_tablets = extract_tablets(excd_addr)
             sorted_tablets = sort_tablets(less_addr, excd_tablets)
