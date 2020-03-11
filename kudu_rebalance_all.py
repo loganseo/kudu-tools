@@ -190,22 +190,22 @@ if excd_result_cnt >= abs(less_result_cnt):
                     break
             sys.stdout.flush()
         if candidate_queue.qsize() == abs(less_result_cnt):
-            # 후보 리스트 내에 중복 tablet 추출
+            print("\n\n5. 중복 Tablet 체크")
+            # 후보 리스트 내에 중복 tablet 체크
             counter = collections.Counter(dup_tablet_list)
             # print(counter)
             del dup_tablet_list[:]
             for key in counter:
                 if int(counter[key]) > 1:
-                    print("중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
+                    # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
                     dup_tablet_list.append(key)
-            print("\ncandidate_queue.qsize(): %s, abs(less_result_cnt): %s"
-                             % (candidate_queue.qsize(), abs(less_result_cnt)))
-            print("\n\n5. candidate_queue 생성 완료 (소요시간: %s)\n\n" % kmod.calc_elapse_time(start_time))
+            print("\n\n6. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
+                  % (candidate_queue.qsize(), len(counter), kmod.calc_elapse_time(start_time)))
             sys.stdout.flush()
             break
         else:
             print("  candidate_queue.qsize(): %s, abs(less_result_cnt): %s\n\n"
-                             % (candidate_queue.qsize(), abs(less_result_cnt)))
+                  % (candidate_queue.qsize(), abs(less_result_cnt)))
 
 elif excd_result_cnt < abs(less_result_cnt):
     raise Exception("Please check replicas...")
@@ -227,22 +227,22 @@ if pre_exe == "false":
             tablet_id = body['tablet_id']
             # Start moving replica!!
             if dup_tablet_list.count(tablet_id) != 1:
-                print("Start moving this replica...")
                 move_cnt = kmod.move_replica(masters, tablet_id, source_ts, target_ts, move_cnt)
-                print(body)
+                print("Start moving this replica: %s" % body)
                 # move_replica 가 수행된 tablet id 를 담아서 move 수행이 완료될 때 까지 체크
                 moving_replica_list.append(tablet_id)
                 moved_list.append({"source_ts": source_ts, "tablet_id": tablet_id})
             # elif dup_tablet_list.count(tablet_id) == 1:
             #     print("중복 tablet %s 는 move_replica 를 수행하지 않는다." % tablet_id)
-            print("남아 있는 후보수: %s" % (candidate_queue.qsize()))
-            print("소요시간: %s" % kmod.calc_elapse_time(start_time))
-            kmod.print_progress((abs(less_result_cnt) - candidate_queue.qsize()), abs(less_result_cnt))
+            print("(%s/%s) 소요시간: %s"
+                  % (candidate_queue.qsize(), abs(less_result_cnt), kmod.calc_elapse_time(start_time)))
+            kmod.print_progress((abs(less_result_cnt) - candidate_queue.qsize()), abs(less_result_cnt)
+                                , "Progress", "Complete", 1, 50)
             print('\n')
             sys.stdout.flush()
             if move_cnt != 0 \
-                    and ((max_moves == move_cnt < candidate_queue.qsize())
-                         or (max_moves > move_cnt >= candidate_queue.qsize())):
+                    and ((max_moves == move_cnt)
+                         or (max_moves > move_cnt and candidate_queue.qsize() == 0)):
                 # moving 중인 replica 체크
                 check_cnt = kmod.checking_move_replica(masters, table_name, moving_replica_list)
                 # move_replica 완료 후 replica 삭제
