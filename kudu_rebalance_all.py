@@ -78,8 +78,7 @@ for j in range(len(less_ts['less_summaries'])):
     less_result_cnt = less_result_cnt + less_ts['less_summaries'][j]['result_count']
 
 print("이동 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
-"""
-[ISSUE-1] 이동 대상 Tablet 수 와 받는 Tablet 수 불일치
+""" 
 1. exceeded_ts 가 보유한 Tablet 리스트 추출
 2. Target TS 의 tablet 리스트 추출
 3. 추출된 tablet 리스트에서 Target 이 포함 되어 있으면 리스트에서 제거
@@ -200,7 +199,7 @@ if excd_result_cnt >= abs(less_result_cnt):
                     # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
                     dup_tablet_list.append(key)
             print("\n\n6. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
-                  % (candidate_queue.qsize(), len(counter), kmod.calc_elapse_time(start_time)))
+                  % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
             sys.stdout.flush()
             break
         else:

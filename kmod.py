@@ -144,11 +144,12 @@ def remove_replica(masters, tbl_nm, moved_list, moved_count):
             else:
                 remove_result = subprocess.call(cmd_remove, shell=True)
             if int(remove_result) == 0:
-                print("removed tablet")
+                print("Removed this tablet")
                 sys.stdout.flush()
                 time.sleep(5)
-            else:
-                raise ValueError("Please check the tablets. Some Tablets can't be removed.")
+            elif int(remove_result) == 1:
+                print("This tablet can't be removed.")
+                # raise ValueError("Please check the tablets. Some Tablets can't be removed.")
 
 
 # Tablet Server List 추출
@@ -184,7 +185,8 @@ def extract_dist_status(masters, tbl_nm, trg_prtn):
         tablet_dist_status["tablet_summaries"].append({"ts_address": ts, "tablet_count": extracted_tablets_count})
     tablet_dist_status["total_count"] = total_count
     # Tablet Server 당 적절한 Tablet 수
-    tablet_dist_status["expected_count"] = total_count / len(tserver_list)
+    expected_count = float(total_count) / float(len(tserver_list))
+    tablet_dist_status["expected_count"] = int(round(expected_count))
     json_tablet_dist_status = json.dumps(tablet_dist_status, ensure_ascii=False, indent=4)
     return json_tablet_dist_status
 
