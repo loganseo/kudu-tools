@@ -91,124 +91,120 @@ target_dic = OrderedDict()  # 받는 대상 정보
 candidate_queue = Queue.Queue()  # 이동 후보 정보
 t_key = 0  # Dictionary 에 배치되는 TServer 별 tablet 들의 key 값
 dup_tablet_list = []  # 후보 리스트 중복 tablet
-if excd_result_cnt >= abs(less_result_cnt):
-    # 1. exceeded_ts 가 보유한 tablet 리스트 추출
-    for i in range(len(exceeded_ts['exceeded_summaries'])):
-        excd_addr = exceeded_ts['exceeded_summaries'][i]['ts_address']
-        excd_cnt = exceeded_ts['exceeded_summaries'][i]['result_count']
-        print("\n1. %s 에서 이동해야 할 Tablet 수: %s" % (excd_addr, excd_cnt))
-        if excd_cnt > 0:
-            excd_tablets = kmod.extract_tablets(excd_addr, table_name, target_partition)
-            # print("- before excd_tablets: %s" % excd_tablets)
-            shuffle(excd_tablets)  # 동일한 tablet(replica) 이동 최소화
-            # print("- after excd_tablets: %s" % excd_tablets)
-            print("  ㄴ %s 에서 보유한 Tablet 수: %s" % (excd_addr, len(excd_tablets)))
-            t_key = 0
-            source_dic[excd_addr] = {}
-            for j in range(len(excd_tablets)):
-                source_dic[excd_addr][t_key] = excd_tablets[j]
-                t_key = t_key + 1
-            # print(source_dic.get(excd_addr))
-            print("  ㄴ 중복 제거 전 %s length: %s" % (excd_addr, len(source_dic.get(excd_addr))))
-    sys.stdout.flush()
+# if excd_result_cnt >= abs(less_result_cnt):
+# 1. exceeded_ts 가 보유한 tablet 리스트 추출
+for i in range(len(exceeded_ts['exceeded_summaries'])):
+    excd_addr = exceeded_ts['exceeded_summaries'][i]['ts_address']
+    excd_cnt = exceeded_ts['exceeded_summaries'][i]['result_count']
+    print("\n1. %s 에서 이동해야 할 Tablet 수: %s" % (excd_addr, excd_cnt))
+    if excd_cnt > 0:
+        excd_tablets = kmod.extract_tablets(excd_addr, table_name, target_partition)
+        # print("- before excd_tablets: %s" % excd_tablets)
+        shuffle(excd_tablets)  # 동일한 tablet(replica) 이동 최소화
+        # print("- after excd_tablets: %s" % excd_tablets)
+        print("  ㄴ %s 에서 보유한 Tablet 수: %s" % (excd_addr, len(excd_tablets)))
+        t_key = 0
+        source_dic[excd_addr] = {}
+        for j in range(len(excd_tablets)):
+            source_dic[excd_addr][t_key] = excd_tablets[j]
+            t_key = t_key + 1
+        # print(source_dic.get(excd_addr))
+        print("  ㄴ 중복 제거 전 %s length: %s" % (excd_addr, len(source_dic.get(excd_addr))))
+sys.stdout.flush()
 
-    # 2. Target TS 의 tablet 리스트 추출
-    print("\n\n2. Target TS 의 Tablet 리스트 추출")
-    for k in range(len(less_ts['less_summaries'])):
-        less_addr = less_ts['less_summaries'][k]['ts_address']
-        less_cnt = less_ts['less_summaries'][k]['result_count']
-        if abs(less_cnt) > 0:
-            less_tablets = kmod.extract_tablets(less_addr, table_name, target_partition)
-            t_key = 0
-            target_dic[less_addr] = {}
-            for j in range(len(less_tablets)):
-                target_dic[less_addr][t_key] = less_tablets[j]
-                t_key = t_key + 1
-            # print(target_dic.get(less_addr))
-    sys.stdout.flush()
+# 2. Target TS 의 tablet 리스트 추출
+print("\n\n2. Target TS 의 Tablet 리스트 추출")
+for k in range(len(less_ts['less_summaries'])):
+    less_addr = less_ts['less_summaries'][k]['ts_address']
+    less_cnt = less_ts['less_summaries'][k]['result_count']
+    if abs(less_cnt) > 0:
+        less_tablets = kmod.extract_tablets(less_addr, table_name, target_partition)
+        t_key = 0
+        target_dic[less_addr] = {}
+        for j in range(len(less_tablets)):
+            target_dic[less_addr][t_key] = less_tablets[j]
+            t_key = t_key + 1
+        # print(target_dic.get(less_addr))
+sys.stdout.flush()
 
-    # 3. 추출된 Tablet 리스트에서 Target 이 포함 되어 있으면 리스트에서 제거
-    print("\n\n3. 추출된 Tablet 리스트에서 Target 이 포함 되어 있으면 리스트에서 제거")
-    dup_info = {}
-    for (excd_ts, excd_tablets) in source_dic.items():
-        for (excd_key, excd_tablet) in excd_tablets.items():
-            for (less_ts, less_tablets) in target_dic.items():
-                for less_tablet in less_tablets.items():
-                    if excd_tablet == less_tablet:
-                        print("  ㄴ 중복 Tablet: %s, %s" % (excd_ts, excd_tablet))
-                        dup_info[excd_ts] = excd_tablet
-    if len(dup_info) > 0:
-        for (key, val) in dup_info.items():
-            source_dic.get(key).pop(val)
-        for (ts, tablets) in source_dic.items():
-            print("  ㄴ 중복 제거 후 %s length: %s" % (ts, len(source_dic.get(ts))))
+# 3. 추출된 Tablet 리스트에서 Target 이 포함 되어 있으면 리스트에서 제거
+print("\n\n3. 추출된 Tablet 리스트에서 Target 이 포함 되어 있으면 리스트에서 제거")
+dup_info = {}
+for (excd_ts, excd_tablets) in source_dic.items():
+    for (excd_key, excd_tablet) in excd_tablets.items():
+        for (less_ts, less_tablets) in target_dic.items():
+            for less_tablet in less_tablets.items():
+                if excd_tablet == less_tablet:
+                    print("  ㄴ 중복 Tablet: %s, %s" % (excd_ts, excd_tablet))
+                    dup_info[excd_ts] = excd_tablet
+if len(dup_info) > 0:
+    for (key, val) in dup_info.items():
+        source_dic.get(key).pop(val)
+    for (ts, tablets) in source_dic.items():
+        print("  ㄴ 중복 제거 후 %s length: %s" % (ts, len(source_dic.get(ts))))
+else:
+    print("  ㄴ 중복 없음")
+sys.stdout.flush()
+
+# 4. candidate_queue 생성
+print("\n\n4. candidate_queue 생성")
+tmp_src_dic = source_dic.copy()  # 이동대상정보를 담아 놓을 임시 dictionary
+copy_src_dic = OrderedDict()  # 남아 있는 이동대상정보를 담아 놓을 임시 dictionary
+add_cnt = 0
+less_cnt = 0
+less_addr = ""
+while True:
+    # 아래 for 문에서 받는 TServer 의 tablet 수가 채워지지 않고 for 문이 종료된 경우
+    # 다음으로 받을 대상 정보 갱신 없이 이어서 이동 대상의 tablet 추가 진행
+    if add_cnt != 0 and less_cnt != 0 and add_cnt != abs(less_cnt):
+        print("  이어서 받을 대상: %s" % less_addr)
     else:
-        print("  ㄴ 중복 없음")
-    sys.stdout.flush()
-
-    # 4. candidate_queue 생성
-    print("\n\n4. candidate_queue 생성")
-    tmp_src_dic = source_dic.copy()  # 이동대상정보를 담아 놓을 임시 dictionary
-    copy_src_dic = OrderedDict()  # 남아 있는 이동대상정보를 담아 놓을 임시 dictionary
-    add_cnt = 0
-    less_cnt = 0
-    less_addr = ""
-    while True:
-        # 아래 for 문에서 받는 TServer 의 tablet 수가 채워지지 않고 for 문이 종료된 경우
-        # 다음으로 받을 대상 정보 갱신 없이 이어서 이동 대상의 tablet 추가 진행
-        if add_cnt != 0 and less_cnt != 0 and add_cnt != abs(less_cnt):
-            print("  이어서 받을 대상: %s" % less_addr)
-        else:
-            # 초기 받을 대상 셋팅 및 이후 받을 대상 셋팅 반복
-            less = less_queue.get()
-            less_addr = less["ts_address"]
-            less_cnt = less["result_count"]
-            add_cnt = 0
-            print("  1) %s 는 %s 개를 받아야 함" % (less_addr, abs(less_cnt)))
-        # 이동 대상 tablet 을 받는 수 만큼 candidate_queue 에 셋팅
-        for (excd_ts, excd_tablets) in tmp_src_dic.items():
-            # print("  2) 이동대상 %s 의 Tablet 개수 %s" % (excd_ts, len(excd_tablets)))
-            if len(excd_tablets) > 0:
-                t_id = excd_tablets.popitem()  # 이동 대상 tablet 정보
-                print("    (후보) source_ts: %s, tablet_id: %s, target_ts: %s" % (excd_ts, t_id[1], less_addr))
-                candidate_queue.put({"source_ts": excd_ts, "target_ts": less_addr, "tablet_id": t_id[1]})
-                dup_tablet_list.append(t_id[1])
-                # candidate_queue 에 셋팅된 정보를 제외한 나머지 이동 대상 정보(TServer명, tablet) 복사
-                copy_src_dic[excd_ts] = tmp_src_dic.pop(excd_ts)
-                # print("  before len(tmp_excd_dic): %s" % len(tmp_excd_dic))
-                # 이동 대상 정보를 소진했을 경우 이전에 복사한 나머지 이동 대상 정보를 셋팅
-                if len(tmp_src_dic) == 0:
-                    tmp_src_dic = copy_src_dic.copy()
-                    copy_src_dic.clear()
-                # print("  after len(tmp_excd_dic): %s" % len(tmp_excd_dic))
-                # print("copy_excd_dic: %s" % copy_excd_dic)
-                add_cnt = add_cnt + 1
-                # 받는 대상의 수를 채운 경우 for 문 중단
-                if add_cnt == abs(less_cnt):
-                    print("  2) %s 개를 받아야 하고, %s 개 받음" % (abs(less_cnt), add_cnt))
-                    break
-            sys.stdout.flush()
-        if candidate_queue.qsize() == abs(less_result_cnt):
-            print("\n\n5. 중복 Tablet 체크")
-            # 후보 리스트 내에 중복 tablet 체크
-            counter = collections.Counter(dup_tablet_list)
-            # print(counter)
-            del dup_tablet_list[:]
-            for key in counter:
-                if int(counter[key]) > 1:
-                    # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
-                    dup_tablet_list.append(key)
-            print("\n\n6. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
-                  % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
-            sys.stdout.flush()
-            break
-        else:
-            print("  candidate_queue.qsize(): %s, abs(less_result_cnt): %s\n\n"
-                  % (candidate_queue.qsize(), abs(less_result_cnt)))
-
-elif excd_result_cnt < abs(less_result_cnt):
-    raise Exception("Please check replicas...")
-# [ISSUE-1] End
+        # 초기 받을 대상 셋팅 및 이후 받을 대상 셋팅 반복
+        less = less_queue.get()
+        less_addr = less["ts_address"]
+        less_cnt = less["result_count"]
+        add_cnt = 0
+        print("  1) %s 는 %s 개를 받아야 함" % (less_addr, abs(less_cnt)))
+    # 이동 대상 tablet 을 받는 수 만큼 candidate_queue 에 셋팅
+    for (excd_ts, excd_tablets) in tmp_src_dic.items():
+        # print("  2) 이동대상 %s 의 Tablet 개수 %s" % (excd_ts, len(excd_tablets)))
+        if len(excd_tablets) > 0:
+            t_id = excd_tablets.popitem()  # 이동 대상 tablet 정보
+            print("    (후보) source_ts: %s, tablet_id: %s, target_ts: %s" % (excd_ts, t_id[1], less_addr))
+            candidate_queue.put({"source_ts": excd_ts, "target_ts": less_addr, "tablet_id": t_id[1]})
+            dup_tablet_list.append(t_id[1])
+            # candidate_queue 에 셋팅된 정보를 제외한 나머지 이동 대상 정보(TServer명, tablet) 복사
+            copy_src_dic[excd_ts] = tmp_src_dic.pop(excd_ts)
+            # print("  before len(tmp_excd_dic): %s" % len(tmp_excd_dic))
+            # 이동 대상 정보를 소진했을 경우 이전에 복사한 나머지 이동 대상 정보를 셋팅
+            if len(tmp_src_dic) == 0:
+                tmp_src_dic = copy_src_dic.copy()
+                copy_src_dic.clear()
+            # print("  after len(tmp_excd_dic): %s" % len(tmp_excd_dic))
+            # print("copy_excd_dic: %s" % copy_excd_dic)
+            add_cnt = add_cnt + 1
+            # 받는 대상의 수를 채운 경우 for 문 중단
+            if add_cnt == abs(less_cnt):
+                print("  2) %s 개를 받아야 하고, %s 개 받음" % (abs(less_cnt), add_cnt))
+                break
+        sys.stdout.flush()
+    if candidate_queue.qsize() == abs(less_result_cnt):
+        # print("\n\n5. 중복 Tablet 체크")
+        # counter = collections.Counter(dup_tablet_list)
+        # del dup_tablet_list[:]
+        # for key in counter:
+        #     if int(counter[key]) > 1:
+        #         # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
+        #         dup_tablet_list.append(key)
+        print("\n\n5. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
+              % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
+        sys.stdout.flush()
+        break
+    else:
+        print("  candidate_queue.qsize(): %s, abs(less_result_cnt): %s\n\n"
+              % (candidate_queue.qsize(), abs(less_result_cnt)))
+# elif excd_result_cnt < abs(less_result_cnt):
+#     raise Exception("Please check replicas...")
 
 if pre_exe == "false":
     if candidate_queue.qsize() <= 0:
@@ -225,14 +221,15 @@ if pre_exe == "false":
             target_ts = body['target_ts']
             tablet_id = body['tablet_id']
             # Start moving replica!!
-            if dup_tablet_list.count(tablet_id) != 1:
+            if dup_tablet_list.count(tablet_id) == 1:
                 move_cnt = kmod.move_replica(masters, tablet_id, source_ts, target_ts, move_cnt)
                 print("Start moving this replica: %s" % body)
                 # move_replica 가 수행된 tablet id 를 담아서 move 수행이 완료될 때 까지 체크
                 moving_replica_list.append(tablet_id)
                 moved_list.append({"source_ts": source_ts, "tablet_id": tablet_id})
-            # elif dup_tablet_list.count(tablet_id) == 1:
-            #     print("중복 tablet %s 는 move_replica 를 수행하지 않는다." % tablet_id)
+            elif dup_tablet_list.count(tablet_id) > 1:
+                print("중복 tablet %s 는 move_replica 를 수행하지 않는다." % tablet_id)
+                dup_tablet_list.remove(tablet_id)
             print("(%s/%s) 소요시간: %s"
                   % (candidate_queue.qsize(), abs(less_result_cnt), kmod.calc_elapse_time(start_time)))
             kmod.print_progress((abs(less_result_cnt) - candidate_queue.qsize()), abs(less_result_cnt)
