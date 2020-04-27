@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import time
+import math
 from collections import OrderedDict
 
 
@@ -186,7 +187,8 @@ def extract_dist_status(masters, tbl_nm, trg_prtn):
     tablet_dist_status["total_count"] = total_count
     # Tablet Server 당 적절한 Tablet 수
     expected_count = float(total_count) / float(len(tserver_list))
-    tablet_dist_status["expected_count"] = int(round(expected_count))
+    # tablet_dist_status["expected_count"] = int(round(expected_count))
+    tablet_dist_status["expected_count"] = int(math.trunc(expected_count))
     json_tablet_dist_status = json.dumps(tablet_dist_status, ensure_ascii=False, indent=4)
     return json_tablet_dist_status
 
