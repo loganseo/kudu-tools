@@ -3,7 +3,6 @@ import Queue
 import sys
 import json
 import time
-import collections
 import kmod
 from collections import OrderedDict
 from random import shuffle
