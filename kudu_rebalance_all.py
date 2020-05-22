@@ -78,6 +78,9 @@ for j in range(len(less_ts['less_summaries'])):
     less_result_cnt = less_result_cnt + less_ts['less_summaries'][j]['result_count']
 
 print("이동 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
+if excd_result_cnt <= 0:
+    raise ValueError("There is nothing to move.")
+
 """ 
 1. exceeded_ts 가 보유한 Tablet 리스트 추출
 2. Target TS 의 tablet 리스트 추출
