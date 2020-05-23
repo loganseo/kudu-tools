@@ -45,6 +45,8 @@ exceeded_ts = OrderedDict()  # 적정수 초과 TServer
 exceeded_ts["exceeded_summaries"] = []
 less_ts = OrderedDict()  # 적정수 미만 TServer
 less_ts["less_summaries"] = []
+zero_ts = OrderedDict()  # 적정수 TServer
+zero_ts["less_summaries"] = []
 for i in range(len(json_tablet_status['tablet_summaries'])):
     # 적정수 초과/미만을 판별하고 이동/받아야함을 나타내는 변수
     result_cnt = json_tablet_status['tablet_summaries'][i]['tablet_count'] - expected_count
@@ -56,6 +58,11 @@ for i in range(len(json_tablet_status['tablet_summaries'])):
         less_ts["less_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
                                           "tablet_count": json_tablet_status['tablet_summaries'][i][
                                               'tablet_count'], "result_count": result_cnt})
+    elif result_cnt == 0:
+        zero_ts["less_summaries"].append({"ts_address": json_tablet_status['tablet_summaries'][i]['ts_address'],
+                                          "tablet_count": json_tablet_status['tablet_summaries'][i][
+                                              'tablet_count'], "result_count": result_cnt})
+
 # Sorting
 exceeded_ts["exceeded_summaries"] = sorted(exceeded_ts["exceeded_summaries"],
                                            key=lambda item: item['result_count'], reverse=True)
@@ -77,7 +84,11 @@ for j in range(len(less_ts['less_summaries'])):
     less_result_cnt = less_result_cnt + less_ts['less_summaries'][j]['result_count']
 
 print("이동 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
-if excd_result_cnt <= 0:
+# 받아야 할 적정수 미만 TServer 가 없고, 이동 대상 Tablet 이 존재할 경우 과도하게 많은 TServer 에서 적정수 Tserver 로 이동
+if less_result_cnt == 0 and excd_result_cnt > 0 and len(zero_ts["less_summaries"]) != 0:
+    less_ts = zero_ts.copy()
+    print(json.dumps(less_ts, ensure_ascii=False, indent=4))
+elif excd_result_cnt <= 0:
     raise ValueError("There is nothing to move.")
 
 """ 
@@ -119,7 +130,7 @@ print("\n\n2. Target TS 의 Tablet 리스트 추출")
 for k in range(len(less_ts['less_summaries'])):
     less_addr = less_ts['less_summaries'][k]['ts_address']
     less_cnt = less_ts['less_summaries'][k]['result_count']
-    if abs(less_cnt) > 0:
+    if abs(less_cnt) >= 0:
         less_tablets = kmod.extract_tablets(less_addr, table_name, target_partition)
         t_key = 0
         target_dic[less_addr] = {}
@@ -189,8 +200,11 @@ while True:
             if add_cnt == abs(less_cnt):
                 print("  2) %s 개를 받아야 하고, %s 개 받음" % (abs(less_cnt), add_cnt))
                 break
+            elif len(zero_ts['less_summaries']) != 0 and add_cnt != abs(less_cnt) and add_cnt == 1 and abs(less_cnt) == 0:
+                print("  2) %s 개를 받아야 하고, %s 개 받음" % (abs(less_cnt), add_cnt))
+                break
         sys.stdout.flush()
-    if candidate_queue.qsize() == abs(less_result_cnt):
+    if (candidate_queue.qsize() == abs(less_result_cnt)) or (len(zero_ts['less_summaries']) != 0 and abs(less_result_cnt) == 0):
         # print("\n\n5. 중복 Tablet 체크")
         # counter = collections.Counter(dup_tablet_list)
         # del dup_tablet_list[:]
