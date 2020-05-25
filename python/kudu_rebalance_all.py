@@ -83,14 +83,24 @@ for j in range(len(less_ts['less_summaries'])):
     less_queue.put(less_ts['less_summaries'][j])
     less_result_cnt = less_result_cnt + less_ts['less_summaries'][j]['result_count']
 
-print("이동 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
 # 받아야 할 적정수 미만 TServer 가 없고, 이동 대상 Tablet 이 존재할 경우 과도하게 많은 TServer 에서 적정수 Tserver 로 이동
-if less_result_cnt == 0 and excd_result_cnt > 0 and len(zero_ts["less_summaries"]) != 0:
+if less_result_cnt == 0 and excd_result_cnt > 0 and less_queue.qsize() == 0 and len(zero_ts["less_summaries"]) != 0:
     less_ts = zero_ts.copy()
+    for j in range(len(less_ts['less_summaries'])):
+        less_queue.put(less_ts['less_summaries'][j])
+        less_result_cnt = less_result_cnt + 1
     print(json.dumps(less_ts, ensure_ascii=False, indent=4))
-elif excd_result_cnt <= 0:
+
+if excd_result_cnt <= 0:
     raise ValueError("There is nothing to move.")
 
+if less_queue.qsize() == 0:
+    raise ValueError("There are no candidates.")
+
+print("이동 대상 tablet 수: %s / 받아야 할 tablet 수: %s" % (excd_result_cnt, less_result_cnt))
+
+# TODO: 이동 대상 tablet 이 특정 TServer 에 몰려있는 경우, 해당 TServer 에 tablet 을 받을 대상들에게
+#  적정수치까지 먼저 할당하는 로직 추가 필요
 """ 
 1. exceeded_ts 가 보유한 Tablet 리스트 추출
 2. Target TS 의 tablet 리스트 추출
@@ -178,6 +188,7 @@ while True:
         less_cnt = less["result_count"]
         add_cnt = 0
         print("  1) %s 는 %s 개를 받아야 함" % (less_addr, abs(less_cnt)))
+    sys.stdout.flush()
     # 이동 대상 tablet 을 받는 수 만큼 candidate_queue 에 셋팅
     for (excd_ts, excd_tablets) in tmp_src_dic.items():
         # print("  2) 이동대상 %s 의 Tablet 개수 %s" % (excd_ts, len(excd_tablets)))
@@ -204,7 +215,7 @@ while True:
                 print("  2) %s 개를 받아야 하고, %s 개 받음" % (abs(less_cnt), add_cnt))
                 break
         sys.stdout.flush()
-    if (candidate_queue.qsize() == abs(less_result_cnt)) or (len(zero_ts['less_summaries']) != 0 and abs(less_result_cnt) == 0):
+    if candidate_queue.qsize() == abs(less_result_cnt):
         # print("\n\n5. 중복 Tablet 체크")
         # counter = collections.Counter(dup_tablet_list)
         # del dup_tablet_list[:]
@@ -212,8 +223,10 @@ while True:
         #     if int(counter[key]) > 1:
         #         # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
         #         dup_tablet_list.append(key)
-        print("\n\n5. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
-              % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
+        # print("\n\n5. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
+        #       % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
+        print("\n\n5. candidate_queue 생성 완료 (Queue size: %s, 소요시간: %s)\n\n"
+              % (candidate_queue.qsize(), kmod.calc_elapse_time(start_time)))
         sys.stdout.flush()
         break
     else:
@@ -221,6 +234,7 @@ while True:
               % (candidate_queue.qsize(), abs(less_result_cnt)))
 # elif excd_result_cnt < abs(less_result_cnt):
 #     raise Exception("Please check replicas...")
+sys.stdout.flush()
 
 if pre_exe == "false":
     if candidate_queue.qsize() <= 0:
@@ -239,7 +253,7 @@ if pre_exe == "false":
             # Start moving replica!!
             if dup_tablet_list.count(tablet_id) == 1:
                 move_cnt = kmod.move_replica(masters, tablet_id, source_ts, target_ts, move_cnt)
-                print("Start moving this replica: %s" % body)
+                print("Start moving this replica: %s ---- [%s] ----> %s" % (source_ts, tablet_id, target_ts))
                 # move_replica 가 수행된 tablet id 를 담아서 move 수행이 완료될 때 까지 체크
                 moving_replica_list.append(tablet_id)
                 moved_list.append({"source_ts": source_ts, "tablet_id": tablet_id})
