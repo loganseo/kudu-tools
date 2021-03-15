@@ -216,15 +216,6 @@ while True:
                 break
         sys.stdout.flush()
     if candidate_queue.qsize() == abs(less_result_cnt):
-        # print("\n\n5. 중복 Tablet 체크")
-        # counter = collections.Counter(dup_tablet_list)
-        # del dup_tablet_list[:]
-        # for key in counter:
-        #     if int(counter[key]) > 1:
-        #         # print("  중복 tablet_id: %s, 중복수: %s" % (key, counter[key]))
-        #         dup_tablet_list.append(key)
-        # print("\n\n5. candidate_queue %s 개 생성 완료 (중복 %s 개) (소요시간: %s)\n\n"
-        #       % (candidate_queue.qsize(), len(dup_tablet_list), kmod.calc_elapse_time(start_time)))
         print("\n\n5. candidate_queue 생성 완료 (Queue size: %s, 소요시간: %s)\n\n"
               % (candidate_queue.qsize(), kmod.calc_elapse_time(start_time)))
         sys.stdout.flush()

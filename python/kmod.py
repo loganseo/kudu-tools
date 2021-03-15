@@ -21,36 +21,6 @@ def extract_tablets(src_ts, tbl_nm, trg_prtn):
     return extr_tlist
 
 
-# 추출된 Tablet 리스트에서 Target TS 가 포함 되있거나, 이미 실행된 move_replica 에 포함된 경우 해당 replica 는 제외
-def sort_tablets(masters, tbl_nm, target_ts, tablet_list):
-    sorted_tlist = []
-    for t in tablet_list:
-        cmd_ksck = "kudu cluster ksck " + masters \
-                   + " -ksck_format=json_pretty -tables=" + tbl_nm \
-                   + " -tablets=" + t
-        temp_output = subprocess.Popen(cmd_ksck, stdout=subprocess.PIPE, shell=True).stdout
-        output_ksck = temp_output.read().strip()
-        temp_output.close()
-        output_ksck = json.loads(output_ksck.decode("utf-8", "ignore"))
-        tgrt_yn = False
-        for i in range(0, len(output_ksck['tablet_summaries'][0]['replicas'])):
-            ts_address = output_ksck['tablet_summaries'][0]['replicas'][i]['ts_address']
-            ts_address = re.sub(':7050', '', string=ts_address)
-            state = output_ksck['tablet_summaries'][0]['replicas'][i]['state']
-            # print(ts_address)
-            # Target TS 가 포함된 replica 체크하여 포함되지 않는 tablet 들로 list 구성
-            if ts_address == target_ts or state == "INITIALIZED":
-                # print("move_replica 대상아님")
-                tgrt_yn = False
-                break
-            else:
-                # print("move_replica 대상")
-                tgrt_yn = True
-        if tgrt_yn:
-            sorted_tlist.append(t)
-    return sorted_tlist
-
-
 def ksck_tablets(masters, tbl_nm, tlist):
     moved_tlist_str = ','.join(map(str, tlist))
     cmd_ksck = "kudu cluster ksck " + masters \
