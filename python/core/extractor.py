@@ -7,9 +7,8 @@ from collections import OrderedDict
 
 
 class Extractor(object):
-    def __init__(self, masters, source_tserver, table_name, target_partition):
+    def __init__(self, masters, table_name, target_partition):
         self._masters = masters
-        self._source_tserver = source_tserver
         self._table_name = table_name
         self._target_partition = target_partition
 
@@ -25,7 +24,7 @@ class Extractor(object):
         extr_tlist = extr_tlist.split("\n")
         return extr_tlist
 
-    def extract_ts_uuid(ts_id):
+    def extract_ts_uuid(self, ts_id):
         ts_uuid = subprocess.Popen('curl -s http://' + ts_id
                                    + ':8050/tablets | grep -w "server uuid"', stdout=subprocess.PIPE, shell=True).stdout
         ext_ts_uuid = ts_uuid.read().strip()
@@ -56,7 +55,7 @@ class Extractor(object):
         tablet_dist_status["tablet_summaries"] = []
         total_count = 0
         for ts in tserver_list:
-            extracted_tablets = self.extract_tablets(self, ts)
+            extracted_tablets = self.extract_tablets(ts)
             if extracted_tablets[0] == "":
                 extracted_tablets_count = 0
             else:

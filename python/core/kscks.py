@@ -1,9 +1,10 @@
 # coding=utf-8
+import json
 import subprocess
 
 
 class Kscks(object):
-    def __int__(self, masters, table_name, tablet_id):
+    def __init__(self, masters, table_name, tablet_id):
         self._masters = masters
         self._table_name = table_name
         self._tablet_id = tablet_id

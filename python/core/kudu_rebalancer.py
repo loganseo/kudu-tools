@@ -22,10 +22,10 @@ class KuduRebalancer(object):
     def rebalance_job(self):
         start_time = time.time()
 
-        extractor = Extractor()
+        extractor = Extractor(self._masters, self._table_name, self._target_partition)
 
         # 주어진 테이블과 Range Partition 에 대해 전체 tablet 수, TServer 별 tablet 수, 적정 tablet 수 추출
-        json_tablet_status = extractor.extract_dist_status(self)
+        json_tablet_status = extractor.extract_dist_status()
         json_tablet_status = json.loads(json_tablet_status.decode("utf-8", "ignore"))
         # print(json_tablet_status)
 
@@ -114,7 +114,7 @@ class KuduRebalancer(object):
             excd_cnt = exceeded_ts['exceeded_summaries'][i]['result_count']
             print("\n1. %s 에서 이동해야 할 Tablet 수: %s" % (excd_addr, excd_cnt))
             if excd_cnt > 0:
-                excd_tablets = extractor.extract_tablets(self, excd_addr)
+                excd_tablets = extractor.extract_tablets(excd_addr)
                 # print("- before excd_tablets: %s" % excd_tablets)
                 shuffle(excd_tablets)  # 동일한 tablet(replica) 이동 최소화
                 # print("- after excd_tablets: %s" % excd_tablets)
@@ -134,7 +134,7 @@ class KuduRebalancer(object):
             less_addr = less_ts['less_summaries'][k]['ts_address']
             less_cnt = less_ts['less_summaries'][k]['result_count']
             if abs(less_cnt) >= 0:
-                less_tablets = extractor.extract_tablets(self, less_addr)
+                less_tablets = extractor.extract_tablets(less_addr)
                 t_key = 0
                 target_dic[less_addr] = {}
                 for j in range(len(less_tablets)):
@@ -235,7 +235,7 @@ class KuduRebalancer(object):
                     source_ts = body['source_ts']
                     target_ts = body['target_ts']
                     tablet_id = body['tablet_id']
-                    control = ControlReplica(self._masters, self._table_name, source_ts, target_ts)
+                    control = ControlReplica(self._masters, self._table_name, self._target_partition, source_ts, target_ts, tablet_id)
                     # Start moving replica!!
                     if dup_tablet_list.count(tablet_id) == 1:
                         move_cnt = control.move_replica(move_cnt)

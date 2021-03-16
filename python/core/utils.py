@@ -1,4 +1,7 @@
 # coding=utf-8
+import sys
+import time
+
 
 class Utils(object):
     def __int__(self, masters, table_name):

@@ -8,16 +8,18 @@ from python.core.kscks import Kscks
 
 
 class ControlReplica(object):
-    def __init__(self, masters, table_name, source_tserver, target_tserver, tablet_id):
+    def __init__(self, masters, table_name, target_partition, source_tserver, target_tserver, tablet_id):
         self._masters = masters
         self._table_name = table_name
+        self._target_partition = target_partition
         self._source_tserver = source_tserver
         self._target_tserver = target_tserver
         self._tablet_id = tablet_id
 
     def move_replica(self, cnt):
-        src_ts_uuid = Extractor.extract_ts_uuid(self._source_tserver)
-        trg_ts_uuid = Extractor.extract_ts_uuid(self._target_tserver)
+        extractor = Extractor(self._masters, self._table_name, self._target_partition)
+        src_ts_uuid = extractor.extract_ts_uuid(self._source_tserver)
+        trg_ts_uuid = extractor.extract_ts_uuid(self._target_tserver)
         cmd_move = "nohup kudu tablet change_config move_replica " + self._masters + " " \
                    + self._tablet_id + " " + src_ts_uuid + " " + trg_ts_uuid + " & > /dev/null 2>&1"
         subprocess.call(cmd_move, shell=True)
@@ -26,11 +28,12 @@ class ControlReplica(object):
         return cnt
 
     def checking_move_replica(self, tablet_list):
-        output_ksck = Kscks.ksck_tablets(self, tablet_list)
+        kscks = Kscks(self._masters, self._table_name, self._tablet_id)
+        output_ksck = kscks.ksck_tablets(tablet_list)
         moving_cnt = len(output_ksck['tablet_summaries'])
         # move_replica 가 실행된 tablet 들이 모두 수행 완료될 때 까지 while 문 수행
         while moving_cnt > 0:
-            output_ksck = Kscks.ksck_tablets(self, tablet_list)
+            output_ksck = Kscks.ksck_tablets(tablet_list)
             check_count = 0
             # print("\nMoving...(%s)" % moving_cnt)
             for i in range(len(output_ksck['tablet_summaries'])):
@@ -55,12 +58,14 @@ class ControlReplica(object):
     def remove_replica(self, moved_list, moved_count):
         # moved 된 tablet 삭제
         if moved_count == 0:
+            kscks = Kscks(self._masters, self._table_name, self._tablet_id)
+            extractor = Extractor(self._masters, self._table_name, self._target_partition)
             for t in moved_list:
                 s_ts = t["source_ts"]
                 t_id = t["tablet_id"]
-                s_ts = Extractor.extract_ts_uuid(s_ts)
+                s_ts = extractor.extract_ts_uuid(s_ts)
                 print("completed to move this tablet: %s" % t_id)
-                output_ksck = Kscks.ksck_single_tablet(self)
+                output_ksck = kscks.ksck_single_tablet()
                 leader_ts_uuid = output_ksck['tablet_summaries'][0]['master_cstate']['leader_uuid']
                 time.sleep(5)
                 cmd_remove = "kudu tablet change_config remove_replica " + self._masters + " " \
