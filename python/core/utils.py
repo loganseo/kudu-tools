@@ -4,10 +4,6 @@ import time
 
 
 class Utils(object):
-    def __int__(self, masters, table_name):
-        self._masters = masters
-        self._table_name = table_name
-
     # 소요시간 계산
     def calc_elapse_time(self, start_time):
         total_elapse_time = time.time() - start_time
